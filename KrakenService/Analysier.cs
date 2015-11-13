@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -23,6 +24,7 @@ namespace KrakenService
         public string Pair { get; set; }
         public int Multiplicateur { get; set; }
         public double Fee { get; set; }
+        private NumberFormatInfo NumberProvider { get; set; } 
 
         // result to deliver to player
         public double PriceToSellProfit { get; set; }
@@ -34,7 +36,9 @@ namespace KrakenService
 
         public Analysier(Recorder rec)
         {
-            Fee = Convert.ToDouble(ConfigurationManager.AppSettings["FeeInPercentage"]);
+             NumberProvider = new NumberFormatInfo();
+            NumberProvider.CurrencyDecimalSeparator = ".";
+            Fee = Convert.ToDouble(ConfigurationManager.AppSettings["FeeInPercentage"], NumberProvider);
             Multiplicateur = Convert.ToInt16(ConfigurationManager.AppSettings["StandardDeviationMultplicateurStopLoss"]);
             TradingDatasList = new List<TradingData>();
             TradingDatasList = rec.ListOftradingDatas;

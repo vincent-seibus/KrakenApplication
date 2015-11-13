@@ -137,11 +137,11 @@ namespace KrakenService
             {
                 try
                 {
-                    SRM.RateAddition(1);                   
+                    SRM.RateAddition(2);                   
                     JObject jo = JObject.Parse(client.GetBalance().ToString());
                     CurrentBalance.BTC = Convert.ToDouble(jo["result"]["XXBT"], NumberProvider);
                     CurrentBalance.EUR = Convert.ToDouble(jo["result"]["ZEUR"], NumberProvider);
-                    Thread.Sleep(4000);
+                    Thread.Sleep(4500);
 
                 }
                 catch(Exception ex)

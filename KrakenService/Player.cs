@@ -170,7 +170,7 @@ namespace KrakenService
         {
 
             //Sleep to avoid temporary lock out caused by GetOpenOrder() method call
-            Thread.Sleep(4000);
+            Thread.Sleep(4500);
 
             JObject obj = JObject.Parse(client.GetOpenOrders().ToString());
            
