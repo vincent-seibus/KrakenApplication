@@ -52,6 +52,8 @@
   <ItemGroup>
     <Compile Include="Analysier.cs" />
     <Compile Include="KrakenObjects\Balance.cs" />
+    <Compile Include="KrakenObjects\CurrentOrder.cs" />
+    <Compile Include="KrakenObjects\OrdersBook.cs" />
     <Compile Include="KrakenObjects\RecentTrades.cs" />
     <Compile Include="KrakenObjects\SendingRateManager.cs" />
     <Compile Include="KrakenObjects\ServerTime.cs" />

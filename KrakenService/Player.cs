@@ -28,7 +28,7 @@ namespace KrakenService
         public KrakenOrder CurrentOrder { get; set; }
         private NumberFormatInfo NumberProvider { get; set; }
         public SendingRateManager SRM { get; set; }
-
+        
         public Player(Analysier i_analysier, string i_pair, SendingRateManager srm)
         {
             NumberProvider = new NumberFormatInfo();
