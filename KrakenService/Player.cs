@@ -85,6 +85,7 @@ namespace KrakenService
             analysier.BuyAverageAndStandardDeviation();
             analysier.GetVolumeToBuy();
 
+
             // create the order
             KrakenOrder order = new KrakenOrder();
             order.Pair = "XBTEUR";

@@ -140,12 +140,23 @@ namespace KrakenService
 
         public void GetVolumeToBuy()
         {            
-            VolumeToBuy = (1 - (Fee/100))*(CurrentBalance.EUR / PriceToBuyStopLoss);
+            VolumeToBuy = CurrentBalance.EUR / PriceToBuyStopLoss;
         }
 
         public void GetVolumeToSell()
         {
-            VolumeToSell = (1 - (Fee / 100)) * CurrentBalance.BTC;
+            VolumeToSell =  CurrentBalance.BTC;
+        }
+
+        public bool SellorBuy()
+        {
+            double MinimalPercenatgeOfEarning = WeightedStandardDeviation / WeightedAverage;
+            if(WeightedStandardDeviation * 2 > Fee + 0.1)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         #endregion
