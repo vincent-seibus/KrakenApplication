@@ -168,8 +168,12 @@ namespace KrakenClient
                     }
                 }
             }
-            catch (WebException wex)
+            catch (Exception ex)
             {
+
+                Console.WriteLine(ex.Message);
+               return (JsonObject)JsonConvert.Import("{error:" + ex.Message +"}");
+                /*/
                 using (HttpWebResponse response = (HttpWebResponse)wex.Response)
                 {
                     using (Stream str = response.GetResponseStream())
@@ -184,6 +188,7 @@ namespace KrakenClient
                         }
                     }
                 }
+                //*/
 
             }
         }

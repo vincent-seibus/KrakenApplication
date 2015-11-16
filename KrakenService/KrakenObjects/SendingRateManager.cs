@@ -32,15 +32,12 @@ namespace KrakenService.KrakenObjects
 
         public void RateAddition(int rate)
         {
-            if(meter + rate <= 20 )
+            while(meter + rate >= 20 )
             {
-                Thread.Sleep(4000);
-                meter = meter + rate;
+                Thread.Sleep(rate * 2100);
             }
-            else
-            {
                 meter = meter + rate;
-            }   
+               
         }
     }
 }

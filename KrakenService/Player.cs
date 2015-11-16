@@ -1,4 +1,5 @@
 ﻿using KrakenClient;
+using KrakenService.KrakenObjects;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -25,12 +26,14 @@ namespace KrakenService
         public bool sold { get; set; }
         public bool pending { get; set; }
         public KrakenOrder CurrentOrder { get; set; }
-        private NumberFormatInfo NumberProvider { get; set; } 
+        private NumberFormatInfo NumberProvider { get; set; }
+        public SendingRateManager SRM { get; set; }
 
-        public Player(Analysier i_analysier, string i_pair)
+        public Player(Analysier i_analysier, string i_pair, SendingRateManager srm)
         {
             NumberProvider = new NumberFormatInfo();
             NumberProvider.CurrencyDecimalSeparator = ".";
+            SRM = srm;
 
             analysier = i_analysier;
             client = new KrakenClient.KrakenClient();
@@ -45,6 +48,9 @@ namespace KrakenService
 
         public string  Sell()
         {
+            //SendingRateCheck
+            SRM.RateAddition(1);
+
             //  change this method if it is different
             analysier.SellAverageAndStandardDeviation();
             analysier.GetVolumeToSell();
@@ -53,7 +59,7 @@ namespace KrakenService
             KrakenOrder order = new KrakenOrder();
             order.Pair = "XBTEUR";
             order.Type = "sell";
-            order.OrderType = "stop-loss-profit";
+            order.OrderType = "stop-loss-profit-limit";
             order.Price = Math.Round(Convert.ToDecimal(analysier.PriceToSellStopLoss,NumberProvider),3);
             order.Price2 = Math.Round(Convert.ToDecimal(analysier.PriceToSellProfit, NumberProvider), 3);
             order.Volume = Convert.ToDecimal(analysier.VolumeToSell,NumberProvider);
@@ -72,6 +78,9 @@ namespace KrakenService
         
         public string Buy()
         {
+            //SendingRateCheck
+            SRM.RateAddition(1);
+
             //  change this method if it is different
             analysier.BuyAverageAndStandardDeviation();
             analysier.GetVolumeToBuy();
@@ -80,7 +89,7 @@ namespace KrakenService
             KrakenOrder order = new KrakenOrder();
             order.Pair = "XBTEUR";
             order.Type = "buy";
-            order.OrderType = "stop-loss-profit";
+            order.OrderType = "stop-loss-profit-limit";
             order.Price = Math.Round(Convert.ToDecimal(analysier.PriceToBuyStopLoss,NumberProvider),3);
             order.Price2 = Math.Round(Convert.ToDecimal(analysier.PriceToBuyProfit,NumberProvider),3);
             order.Volume = Convert.ToDecimal(analysier.VolumeToBuy,NumberProvider);
@@ -101,8 +110,7 @@ namespace KrakenService
         public void Play()
         {
             if(buying)
-            {
-               
+            { 
                 // If buying check if the order has passed
                 JToken openedorders = GetOpenOrders();
                 if (openedorders != null && openedorders.ToString() == "{}")
@@ -122,8 +130,6 @@ namespace KrakenService
 
             if(selling)
             {
-                
-
                 // If buying check if the order has passed
                 JToken openedorders = GetOpenOrders();
                 if (openedorders != null && openedorders.ToString() == "{}")

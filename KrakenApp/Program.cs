@@ -23,12 +23,13 @@ namespace KrakenApp
         static void Main(string[] args)
         {
             // The pair we will work on
-            string pair = "XXBTZEUR";           
+            string pair = "XXBTZEUR";
 
+            SendingRateManager SRM = new SendingRateManager();
              KrakenClient.KrakenClient client = new KrakenClient.KrakenClient();
-             KrakenService.Recorder rec1 = new KrakenService.Recorder(pair);
+             KrakenService.Recorder rec1 = new KrakenService.Recorder(pair,SRM);
              KrakenService.Analysier ana1 = new KrakenService.Analysier(rec1);
-             KrakenService.Player play1 = new Player(ana1, rec1.Pair);
+             KrakenService.Player play1 = new Player(ana1, rec1.Pair,SRM);
 
             int i = 0;
             while(i < 40)
@@ -40,9 +41,7 @@ namespace KrakenApp
                 i++;
             }
 
-             Console.ReadKey();
-
-            
+            Console.ReadKey();
 
             while(true)
             {
@@ -54,10 +53,7 @@ namespace KrakenApp
                 Console.WriteLine("------");
                 Thread.Sleep(2000);
             }       
-            
-                    
            
- 
         }
 
         

@@ -30,12 +30,12 @@ namespace KrakenService
         public SendingRateManager SRM { get; set; }
         private NumberFormatInfo NumberProvider { get; set; } 
 
-        public Recorder(string i_pair)
+        public Recorder(string i_pair, SendingRateManager srm)
         {
             NumberProvider = new NumberFormatInfo();
             NumberProvider.CurrencyDecimalSeparator = ".";
 
-            SRM = new SendingRateManager();
+            SRM = srm;
             CurrentBalance = new Balance();
             client = new KrakenClient.KrakenClient();
             ListOftradingDatas = new List<TradingData>();
@@ -96,7 +96,7 @@ namespace KrakenService
                 // null if error in parsing likely due to a error message from API
                 if(recenttrades == null)
                 {
-                    Thread.Sleep(4000);
+                    //Thread.Sleep(4000);
                     continue;
                 }
 
@@ -122,7 +122,7 @@ namespace KrakenService
                 ListOftradingDatas.RemoveAll(a => a.UnixTime < (interval - IntervalInSecond));
 
                 // Sleep to avoid to reach the limit;
-                Thread.Sleep(4000);
+                //Thread.Sleep(4000);
             }
         }
 
@@ -131,21 +131,27 @@ namespace KrakenService
 
         }
 
+        public void RecordOrderBook()
+        {
+
+        }
+
         public void RecordBalance()
         {
             while (true)
             {
+                SRM.RateAddition(2);       
                 try
                 {
-                    SRM.RateAddition(2);                   
+                                
                     JObject jo = JObject.Parse(client.GetBalance().ToString());
                     CurrentBalance.BTC = Convert.ToDouble(jo["result"]["XXBT"], NumberProvider);
                     CurrentBalance.EUR = Convert.ToDouble(jo["result"]["ZEUR"], NumberProvider);
-                    Thread.Sleep(4500);
-
+                    //Thread.Sleep(4500);
                 }
                 catch(Exception ex)
                 {
+                    Console.WriteLine(ex.Message);
                     // Log error
                 }
             }
