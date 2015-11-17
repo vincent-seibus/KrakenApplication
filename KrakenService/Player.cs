@@ -20,11 +20,14 @@ namespace KrakenService
         public List<string> OrderId { get; set; }
 
         // Context property
-        public bool buying { get; set; }
-        public bool selling { get; set; }
-        public bool bought { get; set; }
-        public bool sold { get; set; }
-        public bool pending { get; set; }
+        public PlayerState playerState { get; set; }
+        public bool buying { get; set; } // while a buy order is placed
+        public bool selling { get; set; } // while a sell order is placed
+        public bool bought { get; set; }// while a buy order is executed
+        public bool sold { get; set; } // while a sell order is executed
+        public bool tobuy { get; set; } // while a buy order has to be placed
+        public bool tosell { get; set; } // while a sell order has to be placed
+        public bool pending { get; set; } // while the system starting
         public KrakenOrder CurrentOrder { get; set; }
         private NumberFormatInfo NumberProvider { get; set; }
         public SendingRateManager SRM { get; set; }
@@ -39,10 +42,13 @@ namespace KrakenService
             client = new KrakenClient.KrakenClient();
             OrderId = new List<string>();
 
+            playerState = PlayerState.Pending;
             buying = false;
             selling = false;
             bought = false;
             sold = false;
+            tobuy = false;
+            tosell = false;
             pending = true;
         }
 
@@ -208,5 +214,16 @@ namespace KrakenService
 
         #endregion 
 
+    }
+
+    public enum PlayerState
+    {
+        ToBuy = 0,
+        Buying =1,
+        Bought = 2,
+        ToSell = 3,
+        Selling = 4,
+        Sold = 5,
+        Pending = 100,        
     }
 }
