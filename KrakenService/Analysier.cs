@@ -24,7 +24,9 @@ namespace KrakenService
         public string Pair { get; set; }
         public int Multiplicateur { get; set; }
         public double Fee { get; set; }
-        private NumberFormatInfo NumberProvider { get; set; } 
+        private NumberFormatInfo NumberProvider { get; set; }
+        public double MinimalPercentageOfEarning { get; set; } // it is in percent 
+        public double MarginOnFee { get; set; } // it is in percent 
 
         // result to deliver to player
         public double PriceToSellProfit { get; set; }
@@ -33,12 +35,16 @@ namespace KrakenService
         public double PriceToBuyStopLoss { get; set; }
         public double VolumeToBuy { get; set; }
         public double VolumeToSell { get; set; }
+        public double PotentialPercentageOfEarning { get; set; } // it is in percent 
 
         public Analysier(Recorder rec)
         {
              NumberProvider = new NumberFormatInfo();
             NumberProvider.CurrencyDecimalSeparator = ".";
+
             Fee = Convert.ToDouble(ConfigurationManager.AppSettings["FeeInPercentage"], NumberProvider);
+            MarginOnFee = Convert.ToDouble(ConfigurationManager.AppSettings["MarginOnFeeInPercentage"], NumberProvider);
+
             Multiplicateur = Convert.ToInt16(ConfigurationManager.AppSettings["StandardDeviationMultplicateurStopLoss"]);
             TradingDatasList = new List<TradingData>();
             TradingDatasList = rec.ListOftradingDatas;
@@ -150,8 +156,10 @@ namespace KrakenService
 
         public bool SellorBuy()
         {
-            double MinimalPercenatgeOfEarning = WeightedStandardDeviation / WeightedAverage;
-            if(WeightedStandardDeviation * 2 > Fee + 0.1)
+            PotentialPercentageOfEarning = WeightedStandardDeviation * 2 * 100 / WeightedAverage; // it is in percent
+            MinimalPercentageOfEarning = Fee + MarginOnFee;
+
+            if (PotentialPercentageOfEarning > MinimalPercentageOfEarning)
             {
                 return true;
             }

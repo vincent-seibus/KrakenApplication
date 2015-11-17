@@ -36,12 +36,13 @@ namespace KrakenService
         public double IntervalInSecond { get; set; }
         public double RequestSendingRate { get; set; }
         public SendingRateManager SRM { get; set; }
-        private NumberFormatInfo NumberProvider { get; set; } 
+        private NumberFormatInfo NumberProvider { get; set; }
+        public int OrderBookCount { get; set; }
 
         public Recorder(string i_pair, SendingRateManager srm)
         {
             NumberProvider = new NumberFormatInfo();
-            NumberProvider.CurrencyDecimalSeparator = ".";
+            NumberProvider.CurrencyDecimalSeparator = ".";           
 
             SRM = srm;
             CurrentBalance = new Balance();
@@ -50,6 +51,7 @@ namespace KrakenService
             ListOfCurrentOrder = new List<CurrentOrder>();
             Pair = i_pair;
             IntervalInSecond = Convert.ToDouble(ConfigurationManager.AppSettings["IntervalStoredInMemoryInSecond"]); // it is to keep the data in memory from X (inetrval) to now.
+            OrderBookCount = Convert.ToInt16(ConfigurationManager.AppSettings["OrderBookCount"]);
 
             // Start recording 
             Task.Run(() => RecordRecentTradeData());
@@ -68,13 +70,20 @@ namespace KrakenService
 
         public RecentTrades GetRecentTrades(long? since)
         {
+            JObject jo = JObject.Parse(client.GetRecentTrades(Pair, since).ToString());
             try
             {
-                JObject servertimeJson = JObject.Parse(client.GetRecentTrades(Pair, since).ToString());
-                var result = JsonConvert.DeserializeObject<dynamic>(servertimeJson["result"].ToString());
+                // check if error
+                if (jo["error"] != null && jo["error"].ToString() != "[]")
+                {
+                    Console.WriteLine(jo["error"]);
+                    return null;
+                }
+
+                var result = JsonConvert.DeserializeObject<dynamic>(jo["result"].ToString());
                 recenttrades = new RecentTrades();
                 recenttrades.Pair = Pair;
-                JArray jsondatas = (JArray)servertimeJson["result"][Pair];
+                JArray jsondatas = (JArray)jo["result"][Pair];
                 recenttrades.Datas = jsondatas.ToObject<List<List<string>>>();
                 recenttrades.Last = result.last;
                 return recenttrades;
@@ -89,14 +98,18 @@ namespace KrakenService
 
         public OrdersBook GetOrdersBook()
         {
+            JObject jo = JObject.Parse(client.GetOrderBook(Pair, OrderBookCount).ToString());
             try
             {
-                int OrderBookCount = Convert.ToInt16(ConfigurationManager.AppSettings["OrderBookCount"]);
-                JObject orderbookJson = JObject.Parse(client.GetOrderBook(Pair, OrderBookCount).ToString());       
-                var result = JsonConvert.DeserializeObject<dynamic>(orderbookJson["result"].ToString());
-
-                JArray jsonasks = (JArray)orderbookJson["result"][Pair]["asks"];
-                JArray jsonbids = (JArray)orderbookJson["result"][Pair]["bids"];
+                // check if error
+                if (jo["error"] != null && jo["error"].ToString() != "[]")
+                {
+                    Console.WriteLine(jo["error"]);
+                    return null;
+                }
+                               
+                JArray jsonasks = (JArray)jo["result"][Pair]["asks"];
+                JArray jsonbids = (JArray)jo["result"][Pair]["bids"];
                 List<List<string>> listasks = jsonasks.ToObject<List<List<string>>>();
                 List<List<string>> listbids = jsonbids.ToObject<List<List<string>>>();
 
@@ -234,11 +247,16 @@ namespace KrakenService
         {
             while (true)
             {
-                SRM.RateAddition(2);       
+                SRM.RateAddition(2);
+                JObject jo = JObject.Parse(client.GetBalance().ToString());
                 try
                 {
-                                
-                    JObject jo = JObject.Parse(client.GetBalance().ToString());
+                    if(jo["error"] != null && jo["error"].ToString() != "[]" )
+                    {
+                        Console.WriteLine(jo["error"]);
+                        continue;
+                    }
+
                     CurrentBalance.BTC = Convert.ToDouble(jo["result"]["XXBT"], NumberProvider);
                     CurrentBalance.EUR = Convert.ToDouble(jo["result"]["ZEUR"], NumberProvider);
                     //Thread.Sleep(4500);

@@ -39,6 +39,7 @@ namespace KrakenApp
                 Console.WriteLine("Number :" + ana1.TradingDatasList.Count + " ; Higher:" + ana1.HigherPrice + " ; Lower: " + ana1.LowerPrice + " ; average : " + ana1.WeightedAverage + " ; Standard deviation : " + ana1.WeightedStandardDeviation);
                 Console.WriteLine("BTC : " + rec1.CurrentBalance.BTC + "; EURO : " + rec1.CurrentBalance.EUR);
                 i++;
+                Console.WriteLine("Sell or buy :" + ana1.SellorBuy().ToString() + " ; Potential Earning: " + ana1.PotentialPercentageOfEarning + " ; minimal earning required: " + ana1.MinimalPercentageOfEarning);
             }
 
             Console.ReadKey();
