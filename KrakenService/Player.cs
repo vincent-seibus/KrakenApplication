@@ -21,13 +21,15 @@ namespace KrakenService
 
         // Context property
         public PlayerState playerState { get; set; }
-        public bool buying { get; set; } // while a buy order is placed
-        public bool selling { get; set; } // while a sell order is placed
-        public bool bought { get; set; }// while a buy order is executed
-        public bool sold { get; set; } // while a sell order is executed
-        public bool tobuy { get; set; } // while a buy order has to be placed
-        public bool tosell { get; set; } // while a sell order has to be placed
-        public bool pending { get; set; } // while the system starting
+        /*/
+       public bool buying { get; set; } // while a buy order is placed
+       public bool selling { get; set; } // while a sell order is placed
+       public bool bought { get; set; }// while a buy order is executed
+       public bool sold { get; set; } // while a sell order is executed
+       public bool tobuy { get; set; } // while a buy order has to be placed
+       public bool tosell { get; set; } // while a sell order has to be placed
+       public bool pending { get; set; } // while the system starting
+           //*/
         public KrakenOrder CurrentOrder { get; set; }
         private NumberFormatInfo NumberProvider { get; set; }
         public SendingRateManager SRM { get; set; }
@@ -43,6 +45,8 @@ namespace KrakenService
             OrderId = new List<string>();
 
             playerState = PlayerState.Pending;
+
+            /*/
             buying = false;
             selling = false;
             bought = false;
@@ -50,16 +54,24 @@ namespace KrakenService
             tobuy = false;
             tosell = false;
             pending = true;
+             //*/
         }
 
         public string  Sell()
         {
+            //Checking if the context is correct
+            if(!playerState.HasFlag(PlayerState.ToSell))
+            {
+                return null;
+            }
+
             //SendingRateCheck
             SRM.RateAddition(1);
 
             //  change this method if it is different
             analysier.SellAverageAndStandardDeviation();
             analysier.GetVolumeToSell();
+                       
 
             // create the order
             KrakenOrder order = new KrakenOrder();
@@ -74,23 +86,30 @@ namespace KrakenService
             //Console.ReadKey();
             string response = client.AddOrder(order).ToString();
 
-            selling = true;
-
             //Get order id from response
-            GetOrderIdFromResponse(response);
-
+            // Check response if no error and change status, don't change status otherwise
+            if(GetOrderIdFromResponse(response) != null)
+            {
+                playerState = PlayerState.Selling;
+            }
+            
             return response;
         }
         
         public string Buy()
         {
+            //Checking if the context is correct
+            if (!playerState.HasFlag(PlayerState.ToBuy))
+            {
+                return null;
+            }
+
             //SendingRateCheck
             SRM.RateAddition(1);
 
             //  change this method if it is different
             analysier.BuyAverageAndStandardDeviation();
             analysier.GetVolumeToBuy();
-
 
             // create the order
             KrakenOrder order = new KrakenOrder();
@@ -105,77 +124,115 @@ namespace KrakenService
             Console.WriteLine("Buy !!! price:" + order.Price + " ; price2: " + order.Price2 + " ; volume:" + order.Volume);
             //Console.ReadKey();
             string response = client.AddOrder(order).ToString();
-            // Change the status of the player
-            buying = true;
+          
 
             //Get order id from response
-            GetOrderIdFromResponse(response);
+            // Check response if no error and change status, don't change status otherwise
+            if (GetOrderIdFromResponse(response) != null)
+            {
+                playerState = PlayerState.Buying;
+            }
 
             return response;
         }
 
         public void Play()
         {
-            if(buying)
+            // BUYING
+            if(playerState.Equals(PlayerState.Buying))
             { 
                 // If buying check if the order has passed
                 JToken openedorders = GetOpenOrders();
                 if (openedorders != null && openedorders.ToString() == "{}")
                 {
                     // if the order is passed, start selling
-                    buying = false;
-                    bought = true;
-                    Console.WriteLine("Bought !!");
-                    Thread.Sleep(Convert.ToInt16(ConfigurationManager.AppSettings["WaitingTimeBetweenBuyAndSell"]));
-                    Sell();
+                    playerState = PlayerState.Bought;                 
+                    Console.WriteLine("Bought !!");                   
                     return;
                 }
-
-                return;
-               
+                return;               
             }
 
-            if(selling)
+            // SELLING
+            if (playerState.Equals(PlayerState.Selling))
             {
                 // If buying check if the order has passed
                 JToken openedorders = GetOpenOrders();
                 if (openedorders != null && openedorders.ToString() == "{}")
                 {
                     // if the order is passed, start selling
-                    sold = true;
-                    selling = false;
-                    Console.WriteLine("Sold !!");
-                    Thread.Sleep(Convert.ToInt16(ConfigurationManager.AppSettings["WaitingTimeBetweenBuyAndSell"]));
-                    Buy();
+                    playerState = PlayerState.Sold;             
+                    Console.WriteLine("Sold !!");            
                     return;
                 }
-
                 return;
             }
 
-            if(pending)
+            // TO BUY
+            if (playerState.Equals(PlayerState.ToBuy))
             {
                 Buy();
+                return;
             }
 
-            pending = false;
+            // TO SELL
+            if (playerState.Equals(PlayerState.ToSell))
+            {
+                Sell();
+                return;
+            }
+
+            // SOLD
+            if (playerState.Equals(PlayerState.Sold))
+            {
+                // Check if the analysier is ok to buy or sell with the current market data
+                if (!analysier.SellorBuy())
+                {
+                    Console.WriteLine("DON'T BUY - Margin too low !!");   
+                    return;
+                }
+
+                playerState = PlayerState.ToBuy;
+                return;
+            }
+
+            // BOUGHT
+            if (playerState.Equals(PlayerState.Bought))
+            {
+                playerState = PlayerState.ToSell;  
+                return;
+            }
+
+            if (playerState.Equals(PlayerState.Pending))
+            {
+                // Check if the analysier is ok to buy or sell with the current market data
+                if (!analysier.SellorBuy())
+                {
+                    Console.WriteLine("DON'T BUY - Margin too low !!");
+                    return;
+                }
+
+                playerState = PlayerState.ToBuy;
+                return;
+            }
+           
         }
 
         #region helpers
 
-        public List<string> GetOrderIdFromResponse(string response)
+        public string GetOrderIdFromResponse(string response)
         {
             JObject resp = JObject.Parse(response);
             try
             {                
                 JArray array = (JArray)resp["result"]["txid"];
                 OrderId = array.ToObject<List<string>>();
-                return OrderId;
+                return array.ToString();
             }
             catch(Exception ex)
             {
                 Console.WriteLine(resp);
-                return OrderId;
+                return null;
             }
         }
 
