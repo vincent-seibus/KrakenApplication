@@ -52,7 +52,7 @@ namespace KrakenApp
                 Console.WriteLine("------");
                 play1.Play();
                 Console.WriteLine("------");
-                Thread.Sleep(2000);
+                Thread.Sleep(1000);
             }       
            
         }

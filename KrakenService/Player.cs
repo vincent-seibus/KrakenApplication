@@ -138,82 +138,70 @@ namespace KrakenService
 
         public void Play()
         {
-            // BUYING
-            if(playerState.Equals(PlayerState.Buying))
-            { 
-                // If buying check if the order has passed
-                JToken openedorders = GetOpenOrders();
-                if (openedorders != null && openedorders.ToString() == "{}")
-                {
-                    // if the order is passed, start selling
-                    playerState = PlayerState.Bought;                 
-                    Console.WriteLine("Bought !!");                   
+            switch (playerState)
+            {
+                // BUYING ---------------------------
+                case PlayerState.Buying:
+                    // If buying check if the order has passed
+                    JToken openedorders = GetOpenOrders();
+                    if (openedorders != null && openedorders.ToString() == "{}")
+                    {
+                        // if the order is passed, start selling
+                        playerState = PlayerState.Bought;
+                        Console.WriteLine("Bought !!");
+                        break;
+                    }
+                    break;
+
+                // SELLING --------------------------
+                case PlayerState.Selling:
+                    // If buying check if the order has passed
+                    openedorders = GetOpenOrders();
+                    if (openedorders != null && openedorders.ToString() == "{}")
+                    {
+                        // if the order is passed, start selling
+                        playerState = PlayerState.Sold;
+                        Console.WriteLine("Sold !!");
+                        break;
+                    }
+                    break;
+
+                // TO BUY ---------------------------
+                case PlayerState.ToBuy:
+                    Buy();
+                    break;
+
+                // TO SELL --------------------------
+                case PlayerState.ToSell:
+                    Sell();
+                    break;
+
+                // SOLD -----------------------------
+                case PlayerState.Sold:
+                    // Check if the analysier is ok to buy or sell with the current market data
+                    if (!analysier.SellorBuy())
+                    {
+                        Console.WriteLine("DON'T BUY - Margin too low !!");
+                        break;
+                    }
+                    playerState = PlayerState.ToBuy;
+                    break;
+
+                // BOUGHT -----------------------------
+                case PlayerState.Bought:
+                    playerState = PlayerState.ToSell;
                     return;
-                }
-                return;               
-            }
 
-            // SELLING
-            if (playerState.Equals(PlayerState.Selling))
-            {
-                // If buying check if the order has passed
-                JToken openedorders = GetOpenOrders();
-                if (openedorders != null && openedorders.ToString() == "{}")
-                {
-                    // if the order is passed, start selling
-                    playerState = PlayerState.Sold;             
-                    Console.WriteLine("Sold !!");            
-                    return;
-                }
-                return;
-            }
-
-            // TO BUY
-            if (playerState.Equals(PlayerState.ToBuy))
-            {
-                Buy();
-                return;
-            }
-
-            // TO SELL
-            if (playerState.Equals(PlayerState.ToSell))
-            {
-                Sell();
-                return;
-            }
-
-            // SOLD
-            if (playerState.Equals(PlayerState.Sold))
-            {
-                // Check if the analysier is ok to buy or sell with the current market data
-                if (!analysier.SellorBuy())
-                {
-                    Console.WriteLine("DON'T BUY - Margin too low !!");   
-                    return;
-                }
-
-                playerState = PlayerState.ToBuy;
-                return;
-            }
-
-            // BOUGHT
-            if (playerState.Equals(PlayerState.Bought))
-            {
-                playerState = PlayerState.ToSell;  
-                return;
-            }
-
-            if (playerState.Equals(PlayerState.Pending))
-            {
-                // Check if the analysier is ok to buy or sell with the current market data
-                if (!analysier.SellorBuy())
-                {
-                    Console.WriteLine("DON'T BUY - Margin too low !!");
-                    return;
-                }
-
-                playerState = PlayerState.ToBuy;
-                return;
+                // PENDING ----------------------------
+                case PlayerState.Pending:
+                    // Check if the analysier is ok to buy or sell with the current market data
+                    if (!analysier.SellorBuy())
+                    {
+                        Console.WriteLine("DON'T BUY - Margin too low !!");
+                        break;
+                    }
+                    playerState = PlayerState.ToBuy;
+                    break;
             }
            
         }

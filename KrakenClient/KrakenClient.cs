@@ -176,7 +176,7 @@ namespace KrakenClient
             {
 
                 Console.WriteLine(ex.Message);
-               return (JsonObject)JsonConvert.Import("{error:" + ex.Message +"}");
+               return (JsonObject)JsonConvert.Import("{'error':'" + ex.Message +"'}");
                 /*/
                 using (HttpWebResponse response = (HttpWebResponse)wex.Response)
                 {
