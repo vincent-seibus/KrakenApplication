@@ -46,15 +46,6 @@ namespace KrakenService
 
             playerState = PlayerState.Pending;
 
-            /*/
-            buying = false;
-            selling = false;
-            bought = false;
-            sold = false;
-            tobuy = false;
-            tosell = false;
-            pending = true;
-             //*/
         }
 
         public string  Sell()

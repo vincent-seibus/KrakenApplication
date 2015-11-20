@@ -12,13 +12,14 @@ namespace KrakenService
 {
     public class Analysier
     {
-        
+        // Datas and middle result
         public List<TradingData> TradingDatasList { get; set; }
         public double WeightedStandardDeviation { get; set; }
         public double WeightedAverage { get; set; }
         public double LowerPrice { get; set; }
         public double HigherPrice { get; set; }
         public Balance CurrentBalance { get; set; }
+        
 
         //Config property
         public string Pair { get; set; }

@@ -142,7 +142,7 @@ namespace KrakenService
             while (true)
             {
                 // Sending rate increase the meter and check if can continue ootherwise stop 4sec;
-                SRM.RateAddition(2);
+                SRM.RateAddition(1);
 
                 recenttrades = this.GetRecentTrades(since);
 
@@ -153,6 +153,7 @@ namespace KrakenService
                     continue;
                 }
 
+                string LinesToAdd = "";
                 foreach (List<string> ls in recenttrades.Datas)
                 {
                     // Foreach line, register in file and in the lsit
@@ -161,21 +162,20 @@ namespace KrakenService
                     foreach (string s in ls)
                     {
                         RecordTradingDataInList(i, s, td);
-                        File.AppendAllText(filePath,s + ",");
+                        LinesToAdd += s + ",";
                         i++;
                         //Console.Write(s);
                     }
                     //Console.WriteLine();
                     ListOftradingDatas.Add(td);
-                    File.AppendAllText(filePath,Environment.NewLine);
+                    LinesToAdd += Environment.NewLine;
                 }
 
+                File.AppendAllText(filePath,LinesToAdd);
                 since = recenttrades.Last;
                 Double interval = GetServerTime().unixtime;
                 ListOftradingDatas.RemoveAll(a => a.UnixTime < (interval - IntervalInSecond));
 
-                // Sleep to avoid to reach the limit;
-                //Thread.Sleep(4000);
             }
         }
 
@@ -191,7 +191,7 @@ namespace KrakenService
             while(true)
             {
                 // Sending rate increase the meter and check if can continue ootherwise stop 4sec;
-                SRM.RateAddition(2);
+                SRM.RateAddition(1);
 
                 var ordersbook = this.GetOrdersBook();
 
@@ -201,44 +201,46 @@ namespace KrakenService
                     continue;
                 }
 
+                string LinesAskToAdd = "";
                 foreach (List<string> ls in ordersBook.Asks)
                 {
                     // Foreach line, register in file and in the lsit
                     CurrentOrder co = new CurrentOrder();
                     co.OrderType = "ask";
+                    LinesAskToAdd = "ask";
+
                     int i = 0;
                     foreach (string s in ls)
                     {
-                        if (i == 0)
-                            File.AppendAllText(filePath, "ask,");
-
                         RecordOrdersBookInList(i, s, co);
-                        File.AppendAllText(filePath, s + ",");
+                        LinesAskToAdd += s + ",";
                         i++;
                     }
-                    //Console.WriteLine();
+                    
                     ListOfCurrentOrder.Add(co);
-                    File.AppendAllText(filePath, Environment.NewLine);
+                    LinesAskToAdd += LinesAskToAdd + Environment.NewLine;
                 }
+                File.AppendAllText(filePath, LinesAskToAdd);
 
+                string LinesBidToAdd = "";
                 foreach(List<string> ls in ordersbook.Bids)
                 {
                     CurrentOrder co = new CurrentOrder();
                     int i = 0;
                     co.OrderType = "bid";
+                    LinesBidToAdd = "bid";
+
                     foreach(string s in ls)
                     {
-                        if (i == 0)
-                            File.AppendAllText(filePath, "bid,");
-
                         RecordOrdersBookInList(i, s, co);
-                        File.AppendAllText(filePath, s + ",");
+                        LinesBidToAdd += s + ",";
                         i++;
                     }
 
                     ListOfCurrentOrder.Add(co);
-                    File.AppendAllText(filePath, Environment.NewLine);
+                    LinesBidToAdd += LinesBidToAdd + Environment.NewLine;
                 }
+                File.AppendAllText(filePath, LinesBidToAdd);
 
             }
         }
