@@ -11,6 +11,7 @@ using System.IO;
 using System.Security.Cryptography;
 using Takenet.Library.RateLimiting;
 using System.Globalization;
+using Newtonsoft.Json.Linq;
 
 namespace KrakenClient
 {
@@ -67,10 +68,16 @@ namespace KrakenClient
 
             if (props != null)
             {
-                
-                using (var writer = new StreamWriter(webRequest.GetRequestStream()))
+                try
                 {
-                    writer.Write(props);
+                    using (var writer = new StreamWriter(webRequest.GetRequestStream()))
+                    {
+                        writer.Write(props);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
                 }
             }
 
@@ -94,7 +101,7 @@ namespace KrakenClient
             catch (Exception wex)
             {
                 Console.WriteLine(wex.Message);
-                return (JsonObject)JsonConvert.Import("{'error':'" + wex.Message + "'}");
+                return (JsonObject)(JsonConvert.Import(@"{""error"":""" + wex.Message + @"""}"));
                 /*/
                 using (HttpWebResponse response = (HttpWebResponse)wex.Response)
                 {
@@ -148,10 +155,16 @@ namespace KrakenClient
 
             if (props != null)
             {
-
-                using (var writer = new StreamWriter(webRequest.GetRequestStream()))
+                try
                 {
-                    writer.Write(props);
+                    using (var writer = new StreamWriter(webRequest.GetRequestStream()))
+                    {
+                        writer.Write(props);
+                    }
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
                 }
             }
 
@@ -176,7 +189,7 @@ namespace KrakenClient
             {
 
                 Console.WriteLine(ex.Message);
-               return (JsonObject)JsonConvert.Import("{'error':'" + ex.Message +"'}");
+                return (JsonObject)JsonConvert.Import(@"{""error"":""" + ex.Message + @"""}");
                 /*/
                 using (HttpWebResponse response = (HttpWebResponse)wex.Response)
                 {
