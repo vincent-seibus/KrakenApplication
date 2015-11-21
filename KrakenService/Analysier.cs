@@ -24,8 +24,9 @@ namespace KrakenService
         public Balance CurrentBalance { get; set; }
         public double LastPrice { get; set; }
         public double LastMiddleQuote { get; set; }
-        public double RsiKIndex { get; set; }
-        public double RsiDIndex { get; set; }
+        public double StochasticKIndex { get; set; }
+        public double StochasticDIndex { get; set; }
+        public double RSIIndex { get; set; }
 
         //Config property
         public string Pair { get; set; }
@@ -250,12 +251,14 @@ namespace KrakenService
 
         public void GetRSI()
         {
-            RsiKIndex = (LastPrice - LowerPrice) * 100 / (HigherPrice - LowerPrice);
+            double H = 0;
+            double B = 0;
+            RSIIndex = H * 100 / (H - B);
         }
 
-        public void Stochastic()
+        public void GetStochasticK()
         {
-
+            StochasticKIndex = (LastPrice - LowerPrice) * 100 / (HigherPrice - LowerPrice);
         }
 
 
