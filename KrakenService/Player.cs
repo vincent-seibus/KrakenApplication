@@ -17,19 +17,10 @@ namespace KrakenService
         public Analysier analysier { get; set; }
         public KrakenClient.KrakenClient client {get; set;}
         public string Pair { get; set; }
-        public List<CurrentOrder> Orders { get; set; }
+        public List<CurrentOrder> MyOpenedOrders { get; set; }
 
         // Context property
         public PlayerState playerState { get; set; }
-        /*/
-       public bool buying { get; set; } // while a buy order is placed
-       public bool selling { get; set; } // while a sell order is placed
-       public bool bought { get; set; }// while a buy order is executed
-       public bool sold { get; set; } // while a sell order is executed
-       public bool tobuy { get; set; } // while a buy order has to be placed
-       public bool tosell { get; set; } // while a sell order has to be placed
-       public bool pending { get; set; } // while the system starting
-           //*/
         public KrakenOrder CurrentOrder { get; set; }
         private NumberFormatInfo NumberProvider { get; set; }
         public SendingRateManager SRM { get; set; }
@@ -42,8 +33,7 @@ namespace KrakenService
 
             analysier = i_analysier;
             client = new KrakenClient.KrakenClient();
-            Orders = new List<CurrentOrder>();
-
+            MyOpenedOrders = analysier.MyOpenedOrders;
             playerState = PlayerState.Pending;
 
         }
@@ -82,6 +72,7 @@ namespace KrakenService
             if(GetOrderIdFromResponse(response) != null)
             {
                 playerState = PlayerState.Selling;
+                analysier.recorder.GetOpenOrders();
             }
             
             return response;
@@ -122,6 +113,7 @@ namespace KrakenService
             if (GetOrderIdFromResponse(response) != null)
             {
                 playerState = PlayerState.Buying;
+                analysier.recorder.GetOpenOrders();
             }
 
             return response;
@@ -134,8 +126,7 @@ namespace KrakenService
                 // BUYING ---------------------------
                 case PlayerState.Buying:
                     // If buying check if the order has passed
-                    JToken openedorders = GetOpenOrders();
-                    if (openedorders != null && openedorders.ToString() == "{}")
+                    if (!analysier.OpenedOrdersExist())
                     {                      
                         playerState = PlayerState.Bought;
                         Console.WriteLine("Bought !!");
@@ -146,8 +137,7 @@ namespace KrakenService
                 // SELLING --------------------------
                 case PlayerState.Selling:
                     // If buying check if the order has passed
-                    openedorders = GetOpenOrders();
-                    if (openedorders != null && openedorders.ToString() == "{}")
+                    if (!analysier.OpenedOrdersExist())
                     {
                         playerState = PlayerState.Sold;
                         Console.WriteLine("Sold !!");
@@ -184,13 +174,18 @@ namespace KrakenService
                 // PENDING ----------------------------
                 case PlayerState.Pending:
                     // Check if the analysier is ok to buy or sell with the current market data
-                    openedorders = GetOpenOrders();
-                    if (openedorders != null && openedorders.ToString() != "{}")
-                    {                                
+                    
+                    if(analysier.OpenedOrdersExist())
+                    {
+                        if (MyOpenedOrders.First().Type == "sell")
+                            playerState = PlayerState.Selling;
+                        if (MyOpenedOrders.First().Type == "buy")
+                            playerState = PlayerState.Buying;
+
                         break;
                     }
                     
-                    if (!analysier.SellorBuy())
+                    if(!analysier.SellorBuy())
                     {
                         Console.WriteLine("DON'T BUY - Margin too low !!");
                         break;
@@ -209,7 +204,7 @@ namespace KrakenService
             try
             {                
                 JArray array = (JArray)resp["result"]["txid"];
-                OrderId = array.ToObject<List<string>>();
+                //Orders = array.ToObject<List<string>>();
                 return array.ToString();
             }
             catch(Exception ex)
@@ -217,55 +212,6 @@ namespace KrakenService
                 Console.WriteLine(resp);
                 return null;
             }
-        }
-
-        public string GetOpenOrders()
-        {
-            //Sleep to avoid temporary lock out caused by GetOpenOrder() method call
-            SRM.RateAddition(2);
-
-            JObject obj = JObject.Parse(client.GetOpenOrders().ToString());
-           
-            try
-            {           
-                JObject OpenedOrders = (JObject)obj["result"]["open"];
-
-                // if orderID is empty, it means that no orders are currently done or th application has been stopped and started 
-                if (OpenedOrders != null && OpenedOrders.ToString() != "{}")
-                {
-                    string txid = OpenedOrders.Properties().First().Name;
-
-                    // Foreach orders store each orders 
-                    foreach (JProperty jn in OpenedOrders.Properties())
-                    {
-                        CurrentOrder openedorder = new CurrentOrder();
-                        JObject order = (JObject)OpenedOrders[jn.Name];
-                        openedorder.OrderID = jn.Name;
-                        openedorder.Type = order["descr"]["type"].ToString();
-                        openedorder.OrderType = order["descr"]["ordertype"].ToString();
-                        
-                        //openedorder.Price = order["descr"]["type"];
-
-                        //if (Orders.Count == 0 || Orders.Where(a => a.OrderID equals openedorder.OrderID).Count == 0)
-                          //  Orders.Add();
-                    }
-
-                                 
-                    
-
-                    return txid;
-                }
-
-                return null;
-               
-            }
-            catch(Exception ex)
-            {
-                Console.WriteLine("Get Opened Order Error: " + obj["error"]);
-                return null;
-            }
-
-           
         }
 
         #endregion 

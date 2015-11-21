@@ -13,13 +13,19 @@ namespace KrakenService
     public class Analysier
     {
         // Datas and middle result
+        public Recorder recorder { get; set; }
         public List<TradingData> TradingDatasList { get; set; }
+        public List<CurrentOrder> ordersBook { get; set; }
+        public List<CurrentOrder> MyOpenedOrders { get; set; }
         public double WeightedStandardDeviation { get; set; }
         public double WeightedAverage { get; set; }
         public double LowerPrice { get; set; }
         public double HigherPrice { get; set; }
         public Balance CurrentBalance { get; set; }
-        
+        public double LastPrice { get; set; }
+        public double LastMiddleQuote { get; set; }
+        public double RsiKIndex { get; set; }
+        public double RsiDIndex { get; set; }
 
         //Config property
         public string Pair { get; set; }
@@ -46,10 +52,13 @@ namespace KrakenService
             Fee = Convert.ToDouble(ConfigurationManager.AppSettings["FeeInPercentage"], NumberProvider);
             MarginOnFee = Convert.ToDouble(ConfigurationManager.AppSettings["MarginOnFeeInPercentage"], NumberProvider);
 
+            recorder = rec;
             Multiplicateur = Convert.ToInt16(ConfigurationManager.AppSettings["StandardDeviationMultplicateurStopLoss"]);
             TradingDatasList = new List<TradingData>();
             TradingDatasList = rec.ListOftradingDatas;
+            ordersBook = rec.ListOfCurrentOrder; 
             CurrentBalance = rec.CurrentBalance;
+            MyOpenedOrders = rec.OpenedOrders;
             Pair = rec.Pair;
             Task.Run(() => Calculate());
         }
@@ -61,7 +70,9 @@ namespace KrakenService
                 GetWeightedAverage();
                 GetWeightedStandardDeviation();
                 GetHigherPrice();
-                GetLowerPrice();                
+                GetLowerPrice();
+                GetLastMiddleQuote();
+                GetLastPrice();
                 Thread.Sleep(1000);
             }
         }
@@ -126,6 +137,34 @@ namespace KrakenService
             return HigherPrice;
         }
 
+        public double GetLastPrice()
+        {
+            try
+            {
+                LastPrice = Convert.ToDouble(TradingDatasList.OrderByDescending(a => a.UnixTime).FirstOrDefault().Price, NumberProvider);
+                return LastPrice;
+            }
+            catch(Exception ex)
+            {
+                return LastPrice;
+            }
+        }
+
+        public double GetLastMiddleQuote()
+        {
+            try
+            {
+
+                double LastLowerAsk = Convert.ToDouble(ordersBook.Where(a => a.OrderType == "ask").OrderBy(a => a.Price).FirstOrDefault().Price);
+                double LastHigherBid = Convert.ToDouble(ordersBook.Where(a => a.OrderType == "bid").OrderByDescending(a => a.Price).FirstOrDefault().Price);
+                LastMiddleQuote = (LastHigherBid + LastLowerAsk) / 2;
+                return LastMiddleQuote;
+            }
+            catch(Exception ex)
+            {
+                return LastMiddleQuote;
+            }
+        }
         
         #endregion 
 
@@ -146,12 +185,14 @@ namespace KrakenService
         }
 
         public void GetVolumeToBuy()
-        {            
+        {
+            recorder.RecordBalance();
             VolumeToBuy = CurrentBalance.EUR / PriceToBuyStopLoss;
         }
 
         public void GetVolumeToSell()
         {
+            recorder.RecordBalance();
             VolumeToSell =  CurrentBalance.BTC;
         }
 
@@ -168,7 +209,56 @@ namespace KrakenService
             return false;
         }
 
+        public bool OpenedOrdersExist()
+        {
+            if(MyOpenedOrders.Count == 0)
+            {
+                return false;
+            }
+
+            // check if 2 prices wih stop profit type
+            double openPrice;
+            if(MyOpenedOrders.First().Price2 == null || MyOpenedOrders.First().Price2 == 0)
+            {
+                openPrice = MyOpenedOrders.First().Price;
+            }
+            else
+            {
+                openPrice = (double)MyOpenedOrders.First().Price2;
+            }
+
+            // check if 2 prices wih stop profit type
+            
+            if (MyOpenedOrders.First().Type == "sell" && openPrice <= LastPrice)
+            {
+                recorder.GetOpenOrders();
+                OpenedOrdersExist();
+            }
+
+            if (MyOpenedOrders.First().Type == "buy" && openPrice >= LastPrice)
+            {
+                recorder.GetOpenOrders();
+                OpenedOrdersExist();
+            }
+
+            return true;
+        }
+
         #endregion
+
+        #region Special Function 
+
+        public void GetRSI()
+        {
+            RsiKIndex = (LastPrice - LowerPrice) * 100 / (HigherPrice - LowerPrice);
+        }
+
+        public void Stochastic()
+        {
+
+        }
+
+
 
         public double GaussFunction(double price)
         {
@@ -189,6 +279,6 @@ namespace KrakenService
             return 0;
         }
 
-
+        #endregion
     }
 }

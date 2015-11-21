@@ -31,6 +31,9 @@ namespace KrakenService
         public OrdersBook ordersBook { get; set; }
         public List<CurrentOrder> ListOfCurrentOrder { get; set; }
 
+        // My orders section
+        public List<CurrentOrder> OpenedOrders { get; set; }
+
         // Config property
         // inetrval in second is the last interval of data to keep 
         public double IntervalInSecond { get; set; }
@@ -52,11 +55,14 @@ namespace KrakenService
             Pair = i_pair;
             IntervalInSecond = Convert.ToDouble(ConfigurationManager.AppSettings["IntervalStoredInMemoryInSecond"]); // it is to keep the data in memory from X (inetrval) to now.
             OrderBookCount = Convert.ToInt16(ConfigurationManager.AppSettings["OrderBookCount"]);
+            OpenedOrders = new List<CurrentOrder>();
 
             // Start recording 
+            GetOpenOrders();
+            RecordBalance();
             Task.Run(() => RecordRecentTradeData());
-            Task.Run(() => RecordBalance());
             Task.Run(() => RecordOrderBook());
+            
         }
 
         #region Deserialize method
@@ -64,8 +70,17 @@ namespace KrakenService
         public ServerTime GetServerTime()
         {
             Newtonsoft.Json.Linq.JObject servertimeJson = JObject.Parse(client.GetServerTime().ToString());
-            servertime = JsonConvert.DeserializeObject<ServerTime>(servertimeJson["result"].ToString());
-            return servertime;
+            try
+            {
+
+                servertime = JsonConvert.DeserializeObject<ServerTime>(servertimeJson["result"].ToString());
+                return servertime;
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return servertime;
+            }
         }
 
         public RecentTrades GetRecentTrades(long? since)
@@ -133,7 +148,7 @@ namespace KrakenService
         #endregion 
 
         #region Record region
-
+        //Public
         public void RecordRecentTradeData()
         {
             long? since = null;
@@ -142,7 +157,7 @@ namespace KrakenService
             while (true)
             {
                 // Sending rate increase the meter and check if can continue ootherwise stop 4sec;
-                SRM.RateAddition(1);
+                SRM.RateAddition(2);
 
                 recenttrades = this.GetRecentTrades(since);
 
@@ -175,7 +190,7 @@ namespace KrakenService
                 since = recenttrades.Last;
                 Double interval = GetServerTime().unixtime;
                 ListOftradingDatas.RemoveAll(a => a.UnixTime < (interval - IntervalInSecond));
-
+                Thread.Sleep(1000);
             }
         }
 
@@ -191,7 +206,7 @@ namespace KrakenService
             while(true)
             {
                 // Sending rate increase the meter and check if can continue ootherwise stop 4sec;
-                SRM.RateAddition(1);
+                SRM.RateAddition(2);
 
                 var ordersbook = this.GetOrdersBook();
 
@@ -241,14 +256,14 @@ namespace KrakenService
                     LinesBidToAdd += LinesBidToAdd + Environment.NewLine;
                 }
                 File.AppendAllText(filePath, LinesBidToAdd);
-
+                Thread.Sleep(1000);
             }
         }
 
+        //Private
         public void RecordBalance()
         {
-            while (true)
-            {
+           
                 SRM.RateAddition(2);
                 JObject jo = JObject.Parse(client.GetBalance().ToString());
                 try
@@ -256,7 +271,7 @@ namespace KrakenService
                     if(jo["error"] != null && jo["error"].ToString() != "[]" )
                     {
                         Console.WriteLine(jo["error"]);
-                        continue;
+                        return;
                     }
 
                     CurrentBalance.BTC = Convert.ToDouble(jo["result"]["XXBT"], NumberProvider);
@@ -268,6 +283,46 @@ namespace KrakenService
                     Console.WriteLine(ex.Message);
                     // Log error
                 }
+            
+        }
+
+        public string GetOpenOrders()
+        {
+            //Sleep to avoid temporary lock out caused by GetOpenOrder() method call
+            SRM.RateAddition(2);
+            JObject obj = JObject.Parse(client.GetOpenOrders().ToString());
+            OpenedOrders.Clear();
+            try
+            {
+                JObject OpenedOrdersJson = (JObject)obj["result"]["open"];
+                // if orderID is empty, it means that no orders are currently done or th application has been stopped and started 
+                if (OpenedOrders != null && OpenedOrders.ToString() != "{}")
+                {
+                    string txid = OpenedOrdersJson.Properties().First().Name;
+                    // Foreach orders store each orders 
+                    foreach (JProperty jn in OpenedOrdersJson.Properties())
+                    {
+                        CurrentOrder openedorder = new CurrentOrder();
+                        JObject order = (JObject)OpenedOrdersJson[jn.Name];
+                        openedorder.OrderID = jn.Name;
+                        openedorder.Type = order["descr"]["type"].ToString();
+                        openedorder.OrderType = order["descr"]["ordertype"].ToString();
+                        openedorder.Price = Convert.ToDouble(order["descr"]["price"], NumberProvider);
+                        openedorder.Price2 = Convert.ToDouble(order["descr"]["price2"],NumberProvider);
+                        openedorder.Volume = Convert.ToDouble(order["vol"], NumberProvider);
+
+                        if (OpenedOrders.Count == 0 || OpenedOrders.Where(a => a.OrderID == openedorder.OrderID).Count() == 0)
+                            OpenedOrders.Add(openedorder);
+                    }
+
+                    return txid;
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Get Opened Order Error: " + obj["error"]);
+                return null;
             }
         }
 
