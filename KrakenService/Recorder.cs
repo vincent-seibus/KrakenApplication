@@ -11,6 +11,7 @@ using System.IO;
 using System.Configuration;
 using KrakenClient;
 using System.Globalization;
+using CsvHelper;
 
 namespace KrakenService
 {
@@ -234,6 +235,12 @@ namespace KrakenService
             long? since = null;
             string filePath = this.CheckFileAndDirectoryOHLCData();
 
+            OHLCData lastdata = GetLastLineOHLCDataRecorded();
+            if( lastdata != null)
+            {
+                since = (long)lastdata.time;
+            }
+
             //while (true)
             //{
                 // Sending rate increase the meter and check if can continue ootherwise stop 4sec;
@@ -265,7 +272,13 @@ namespace KrakenService
                     LinesToAdd += Environment.NewLine;
                 }
 
-                File.AppendAllText(filePath,LinesToAdd);
+                //File.AppendAllText(filePath,LinesToAdd);
+                using (StreamWriter writer = new StreamWriter(File.OpenWrite(filePath)))
+                {
+                    var csv = new CsvWriter(writer);
+                    csv.WriteRecords(ListOfOHLCData);
+                }
+
                 since = OHLCReceived.Last;
                 Double interval = GetServerTime().unixtime;
                 //ListOftradingDatas.RemoveAll(a => a.UnixTime < (interval - IntervalInSecond));
@@ -402,6 +415,31 @@ namespace KrakenService
 
         #endregion
 
+        #region Reader
+
+        public OHLCData GetLastLineOHLCDataRecorded()
+        {
+            OHLCData OHLCLastData = new OHLCData();
+
+            using (StreamReader reader = File.OpenText(CheckFileAndDirectoryOHLCData()))
+            {
+                var csv = new CsvReader(reader);
+                var records = csv.GetRecords<OHLCData>();
+                try
+                {
+                    OHLCLastData = records.OrderByDescending(a => a.time).FirstOrDefault();
+                }
+                catch(Exception)
+                {
+                    return null;
+                }
+            }
+
+            return OHLCLastData;
+        }
+
+        #endregion
+
         #region helpers
 
         /// <summary>
@@ -436,11 +474,12 @@ namespace KrakenService
 
         public string CheckFileAndDirectoryOHLCData()
         {
+            string OHLCInterval = ConfigurationManager.AppSettings["PeriodOHLCData"];
             string pathDirectory = Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).ToString(), "OHLCData" + Pair);
             if (!Directory.Exists(pathDirectory))
                 Directory.CreateDirectory(pathDirectory);
 
-            string pathFile = Path.Combine(pathDirectory, "OHLCData_" + DateTime.Now.Year + DateTime.Now.Month + DateTime.Now.Day);
+            string pathFile = Path.Combine(pathDirectory, "OHLCData_" + OHLCInterval);
             if (!File.Exists(pathFile))
                 File.Create(pathFile);
 
@@ -525,7 +564,6 @@ namespace KrakenService
         }
 
         #endregion 
-
 
     }
 }

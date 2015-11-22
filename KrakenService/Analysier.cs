@@ -261,8 +261,6 @@ namespace KrakenService
             StochasticKIndex = (LastPrice - LowerPrice) * 100 / (HigherPrice - LowerPrice);
         }
 
-
-
         public double GaussFunction(double price)
         {
             double result;

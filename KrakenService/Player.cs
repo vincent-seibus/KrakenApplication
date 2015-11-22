@@ -174,22 +174,29 @@ namespace KrakenService
                 // PENDING ----------------------------
                 case PlayerState.Pending:
                     // Check if the analysier is ok to buy or sell with the current market data
-                    
                     if(analysier.OpenedOrdersExist())
                     {
                         if (MyOpenedOrders.First().Type == "sell")
                             playerState = PlayerState.Selling;
                         if (MyOpenedOrders.First().Type == "buy")
                             playerState = PlayerState.Buying;
-
                         break;
                     }
-                    
+                    // To sell if the bitcoin balance is higher that the euro balance
+                    analysier.GetVolumeToBuy();
+                    analysier.GetVolumeToSell();
+                    if (analysier.VolumeToSell > analysier.VolumeToBuy)
+                    {
+                        playerState = PlayerState.ToSell;
+                        break;
+                    }
+                    // Check if it worth to buy
                     if(!analysier.SellorBuy())
                     {
                         Console.WriteLine("DON'T BUY - Margin too low !!");
                         break;
                     }
+
                     playerState = PlayerState.ToBuy;
                     break;
             }
