@@ -230,3 +230,5 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 KrakenApp/App.config
+KrakenApp/App.config
+KrakenApp/KrakenApp.csproj

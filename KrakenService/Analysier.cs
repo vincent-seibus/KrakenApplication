@@ -197,6 +197,8 @@ namespace KrakenService
             VolumeToSell =  CurrentBalance.BTC;
         }
 
+        // Bool method used to Go-No go decision
+
         public bool SellorBuy()
         {
             PotentialPercentageOfEarning = WeightedStandardDeviation * 2 * 100 / WeightedAverage; // it is in percent
@@ -228,21 +230,41 @@ namespace KrakenService
                 openPrice = (double)MyOpenedOrders.First().Price2;
             }
 
-            // check if 2 prices wih stop profit type
+            // check if 2 prices with stop profit type
             
             if (MyOpenedOrders.First().Type == "sell" && openPrice <= LastPrice)
             {
                 recorder.GetOpenOrders();
-                OpenedOrdersExist();
+                return OpenedOrdersExist();
             }
 
             if (MyOpenedOrders.First().Type == "buy" && openPrice >= LastPrice)
             {
                 recorder.GetOpenOrders();
-                OpenedOrdersExist();
+                return OpenedOrdersExist();
             }
 
             return true;
+        }
+
+        public bool CancelOpenedOrder()
+        {
+            if(MyOpenedOrders.Count == 0)
+            {
+                return false;
+            }
+
+            if (MyOpenedOrders.First().Type == "sell" && (MyOpenedOrders.First().Price - 4 * WeightedStandardDeviation) > LastMiddleQuote)
+            {
+                return true;
+            }
+
+            if (MyOpenedOrders.First().Type == "buy" && (MyOpenedOrders.First().Price + 4 * WeightedStandardDeviation) < LastMiddleQuote)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         #endregion

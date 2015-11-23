@@ -28,12 +28,15 @@ namespace KrakenApp
             SendingRateManager SRM = new SendingRateManager();
              KrakenClient.KrakenClient client = new KrakenClient.KrakenClient();
 
-             //Console.WriteLine(client.GetOHLCData(pair,1440));
+             //string result = client.CancelOrder("O3V2NP-DTB7Z-EEKGIC").ToString();
+             //Console.WriteLine(result);
              //Console.ReadKey();
 
              KrakenService.Recorder rec1 = new KrakenService.Recorder(pair,SRM);
              KrakenService.Analysier ana1 = new KrakenService.Analysier(rec1);
              KrakenService.Player play1 = new Player(ana1, rec1.Pair,SRM);
+
+            
 
             int i = 0;
             while(i < 40)

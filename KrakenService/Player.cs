@@ -38,7 +38,7 @@ namespace KrakenService
 
         }
 
-        public string  Sell()
+        public string  SellAtLimit()
         {
             //Checking if the context is correct
             if(!playerState.HasFlag(PlayerState.ToSell))
@@ -58,12 +58,11 @@ namespace KrakenService
             KrakenOrder order = new KrakenOrder();
             order.Pair = "XBTEUR";
             order.Type = "sell";
-            order.OrderType = "stop-loss-profit-limit";
-            order.Price = Math.Round(Convert.ToDecimal(analysier.PriceToSellStopLoss,NumberProvider),3);
-            order.Price2 = Math.Round(Convert.ToDecimal(analysier.PriceToSellProfit, NumberProvider), 3);
+            order.OrderType = "limit";
+            order.Price = Math.Round(Convert.ToDecimal(analysier.PriceToSellProfit, NumberProvider), 3);
             order.Volume = Convert.ToDecimal(analysier.VolumeToSell,NumberProvider);
 
-            Console.WriteLine("Sell !!! price:" + order.Price + " ; price2: " + order.Price2 + " ; volume:" + order.Volume);
+            Console.WriteLine("Sell !!! price:" + order.Price + " ; volume:" + order.Volume);
             //Console.ReadKey();
             string response = client.AddOrder(order).ToString();
 
@@ -78,7 +77,7 @@ namespace KrakenService
             return response;
         }
         
-        public string Buy()
+        public string BuyAtLimit()
         {
             //Checking if the context is correct
             if (!playerState.HasFlag(PlayerState.ToBuy))
@@ -97,13 +96,12 @@ namespace KrakenService
             KrakenOrder order = new KrakenOrder();
             order.Pair = "XBTEUR";
             order.Type = "buy";
-            order.OrderType = "stop-loss-profit-limit";
-            order.Price = Math.Round(Convert.ToDecimal(analysier.PriceToBuyStopLoss,NumberProvider),3);
-            order.Price2 = Math.Round(Convert.ToDecimal(analysier.PriceToBuyProfit,NumberProvider),3);
+            order.OrderType = "limit";
+            order.Price = Math.Round(Convert.ToDecimal(analysier.PriceToBuyProfit,NumberProvider),3);
             order.Volume = Convert.ToDecimal(analysier.VolumeToBuy,NumberProvider);
 
             // Send request to buy
-            Console.WriteLine("Buy !!! price:" + order.Price + " ; price2: " + order.Price2 + " ; volume:" + order.Volume);
+            Console.WriteLine("Buy !!! price:" + order.Price + " ; volume:" + order.Volume);
             //Console.ReadKey();
             string response = client.AddOrder(order).ToString();
           
@@ -132,6 +130,13 @@ namespace KrakenService
                         Console.WriteLine("Bought !!");
                         break;
                     }
+                    
+                    if(analysier.CancelOpenedOrder())
+                    {
+                        playerState = PlayerState.ToCancel;                    
+                        break;
+                    }
+                    
                     break;
 
                 // SELLING --------------------------
@@ -143,16 +148,24 @@ namespace KrakenService
                         Console.WriteLine("Sold !!");
                         break;
                     }
+
+                    if (analysier.CancelOpenedOrder())
+                    {
+                        Cancel(analysier.MyOpenedOrders.First().OrderID);
+                        Console.WriteLine("Order Cancelled");
+                        break;
+                    }
+
                     break;
 
                 // TO BUY ---------------------------
                 case PlayerState.ToBuy:
-                    Buy();
+                    BuyAtLimit();
                     break;
 
                 // TO SELL --------------------------
                 case PlayerState.ToSell:
-                    Sell();
+                    SellAtLimit();
                     break;
 
                 // SOLD -----------------------------
@@ -169,7 +182,14 @@ namespace KrakenService
                 // BOUGHT -----------------------------
                 case PlayerState.Bought:
                     playerState = PlayerState.ToSell;
-                    return;
+                    break;
+
+                // TO CANCEL
+                case PlayerState.ToCancel:
+                        Cancel(analysier.MyOpenedOrders.First().OrderID);
+                        Console.WriteLine("Order Cancelled");
+                        break;
+
 
                 // PENDING ----------------------------
                 case PlayerState.Pending:
@@ -210,7 +230,27 @@ namespace KrakenService
                 return;
             }
 
-            string response = client.CancelOrder(OrderId).ToString();    
+            string response = client.CancelOrder(OrderId).ToString();
+
+            JObject resp = JObject.Parse(response);
+
+            try
+            {
+                if(resp["error"] == null || resp["error"].ToString() == "[]")
+                {
+                    playerState = PlayerState.Cancelled;                    
+                }
+                else
+                {
+                    return;
+                }
+
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message + "; response:" + resp);
+            }
+
         }
 
         #region helpers
