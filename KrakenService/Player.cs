@@ -203,6 +203,16 @@ namespace KrakenService
            
         }
 
+        public void Cancel(string OrderId)
+        {
+            if(!playerState.HasFlag(PlayerState.ToCancel))
+            {
+                return;
+            }
+
+            string response = client.CancelOrder(OrderId).ToString();    
+        }
+
         #region helpers
 
         public string GetOrderIdFromResponse(string response)
@@ -233,6 +243,9 @@ namespace KrakenService
         ToSell = 3,
         Selling = 4,
         Sold = 5,
+        ToCancel = 6,
+        Cancelling = 7,
+        Cancelled = 8,
         Pending = 100,        
     }
 }
