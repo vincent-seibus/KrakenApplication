@@ -429,13 +429,34 @@ namespace KrakenService
                 {
                     OHLCLastData = records.OrderByDescending(a => a.time).FirstOrDefault();
                 }
-                catch(Exception)
+                catch (Exception)
                 {
                     return null;
                 }
             }
 
             return OHLCLastData;
+        }
+
+        public List<OHLCData> GetLastRowsOHLCDataRecorded(int Rows)
+        {
+            List<OHLCData> OHLCLastRows = new List<OHLCData>();
+
+            using (StreamReader reader = File.OpenText(CheckFileAndDirectoryOHLCData()))
+            {
+                var csv = new CsvReader(reader);
+                var records = csv.GetRecords<OHLCData>();
+                try
+                {
+                    OHLCLastRows = records.OrderByDescending(a => a.time).Take(Rows).ToList();
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
+            }
+
+            return OHLCLastRows;
         }
 
         #endregion
@@ -481,7 +502,12 @@ namespace KrakenService
 
             string pathFile = Path.Combine(pathDirectory, "OHLCData_" + OHLCInterval);
             if (!File.Exists(pathFile))
-                File.Create(pathFile);
+            {
+                using (var myFile = File.Create(pathFile))
+                {
+                    // interact with myFile here, it will be disposed automatically
+                }
+            }
 
             return pathFile;
         }

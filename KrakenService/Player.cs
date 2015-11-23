@@ -117,45 +117,53 @@ namespace KrakenService
             return response;
         }
 
+        public void Buying()
+        {
+            if (!analysier.OpenedOrdersExist())
+            {
+                playerState = PlayerState.Bought;
+                Console.WriteLine("Bought !!");
+                return;
+            }
+
+            if (analysier.CancelOpenedOrder())
+            {
+                playerState = PlayerState.ToCancel;
+                return;
+            }
+        }
+
+        public void Selling()
+        {
+            // If buying check if the order has passed
+            if (!analysier.OpenedOrdersExist())
+            {
+                playerState = PlayerState.Sold;
+                Console.WriteLine("Sold !!");
+                return;
+            }
+
+            if (analysier.CancelOpenedOrder())
+            {
+                Cancel(analysier.MyOpenedOrders.First().OrderID);
+                Console.WriteLine("Order Cancelled");
+                return;
+            }
+
+        }
+
         public void Play()
         {
             switch (playerState)
             {
                 // BUYING ---------------------------
                 case PlayerState.Buying:
-                    // If buying check if the order has passed
-                    if (!analysier.OpenedOrdersExist())
-                    {                      
-                        playerState = PlayerState.Bought;
-                        Console.WriteLine("Bought !!");
-                        break;
-                    }
-                    
-                    if(analysier.CancelOpenedOrder())
-                    {
-                        playerState = PlayerState.ToCancel;                    
-                        break;
-                    }
-                    
+                    Buying();
                     break;
 
                 // SELLING --------------------------
                 case PlayerState.Selling:
-                    // If buying check if the order has passed
-                    if (!analysier.OpenedOrdersExist())
-                    {
-                        playerState = PlayerState.Sold;
-                        Console.WriteLine("Sold !!");
-                        break;
-                    }
-
-                    if (analysier.CancelOpenedOrder())
-                    {
-                        Cancel(analysier.MyOpenedOrders.First().OrderID);
-                        Console.WriteLine("Order Cancelled");
-                        break;
-                    }
-
+                    Selling();
                     break;
 
                 // TO BUY ---------------------------
@@ -187,9 +195,12 @@ namespace KrakenService
                 // TO CANCEL
                 case PlayerState.ToCancel:
                         Cancel(analysier.MyOpenedOrders.First().OrderID);
-                        Console.WriteLine("Order Cancelled");
                         break;
 
+                //CANCELLED
+                case PlayerState.Cancelled:
+                        playerState = PlayerState.Pending;
+                        break;
 
                 // PENDING ----------------------------
                 case PlayerState.Pending:
@@ -238,7 +249,8 @@ namespace KrakenService
             {
                 if(resp["error"] == null || resp["error"].ToString() == "[]")
                 {
-                    playerState = PlayerState.Cancelled;                    
+                    playerState = PlayerState.Cancelled;
+                    Console.WriteLine("Order Cancelled");
                 }
                 else
                 {
