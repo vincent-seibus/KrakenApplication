@@ -302,6 +302,19 @@ namespace KrakenService
             return 0;
         }
 
+        public double MMA(IEnumerable<double> data, double alpha)
+        {
+            double mma = 0;
+            int i = 0;
+            foreach (double d in data)
+            {
+                mma = mma + alpha * Math.Pow(1 - alpha, i) * d;
+                i++;
+            }
+
+            return mma;
+        }
+
         #endregion
     }
 }
