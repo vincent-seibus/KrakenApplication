@@ -34,10 +34,9 @@ namespace KrakenService.KrakenObjects
         {
             while(meter + rate >= 20 )
             {
-                Thread.Sleep(rate * 2100);
+                Thread.Sleep(rate * 2000);
             }
                 meter = meter + rate;
-               
         }
     }
 }

@@ -11,6 +11,7 @@ using System.IO;
 using System.Configuration;
 using KrakenClient;
 using System.Globalization;
+using CsvHelper;
 
 namespace KrakenService
 {
@@ -23,6 +24,10 @@ namespace KrakenService
         //Recent trade property
         public RecentTrades recenttrades { get; set; }
         public List<TradingData> ListOftradingDatas { get; set; }
+
+        //Recent trade property
+        public RecentTrades OHLCReceived { get; set; }
+        public List<OHLCData> ListOfOHLCData { get; set; }
         
         //Bablance property
         public Balance CurrentBalance { get; set; }
@@ -30,6 +35,9 @@ namespace KrakenService
         //orderbook property
         public OrdersBook ordersBook { get; set; }
         public List<CurrentOrder> ListOfCurrentOrder { get; set; }
+
+        // My orders section
+        public List<CurrentOrder> OpenedOrders { get; set; }
 
         // Config property
         // inetrval in second is the last interval of data to keep 
@@ -49,14 +57,18 @@ namespace KrakenService
             client = new KrakenClient.KrakenClient();
             ListOftradingDatas = new List<TradingData>();
             ListOfCurrentOrder = new List<CurrentOrder>();
+            ListOfOHLCData = new List<OHLCData>();
             Pair = i_pair;
             IntervalInSecond = Convert.ToDouble(ConfigurationManager.AppSettings["IntervalStoredInMemoryInSecond"]); // it is to keep the data in memory from X (inetrval) to now.
             OrderBookCount = Convert.ToInt16(ConfigurationManager.AppSettings["OrderBookCount"]);
+            OpenedOrders = new List<CurrentOrder>();
 
             // Start recording 
+            GetOpenOrders();
+            RecordBalance();
             Task.Run(() => RecordRecentTradeData());
-            Task.Run(() => RecordBalance());
             Task.Run(() => RecordOrderBook());
+            Task.Run(() => RecordOHLCData());
         }
 
         #region Deserialize method
@@ -64,8 +76,17 @@ namespace KrakenService
         public ServerTime GetServerTime()
         {
             Newtonsoft.Json.Linq.JObject servertimeJson = JObject.Parse(client.GetServerTime().ToString());
-            servertime = JsonConvert.DeserializeObject<ServerTime>(servertimeJson["result"].ToString());
-            return servertime;
+            try
+            {
+
+                servertime = JsonConvert.DeserializeObject<ServerTime>(servertimeJson["result"].ToString());
+                return servertime;
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return servertime;
+            }
         }
 
         public RecentTrades GetRecentTrades(long? since)
@@ -89,6 +110,36 @@ namespace KrakenService
                 return recenttrades;
             }
             catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
+            return null;
+        }
+
+        public RecentTrades GetOHLCDatas(long? since)
+        {
+            int PeriodOHLCData = Convert.ToInt16(ConfigurationManager.AppSettings["PeriodOHLCData"]);
+
+            JObject jo = JObject.Parse(client.GetOHLCData(Pair,PeriodOHLCData,since).ToString());
+            try
+            {
+                // check if error
+                if (jo["error"] != null && jo["error"].ToString() != "[]")
+                {
+                    Console.WriteLine(jo["error"]);
+                    return null;
+                }
+
+                var result = JsonConvert.DeserializeObject<dynamic>(jo["result"].ToString());
+                recenttrades = new RecentTrades();
+                recenttrades.Pair = Pair;
+                JArray jsondatas = (JArray)jo["result"][Pair];
+                recenttrades.Datas = jsondatas.ToObject<List<List<string>>>();
+                recenttrades.Last = result.last;
+                return recenttrades;
+            }
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
             }
@@ -133,7 +184,7 @@ namespace KrakenService
         #endregion 
 
         #region Record region
-
+        //Public
         public void RecordRecentTradeData()
         {
             long? since = null;
@@ -153,6 +204,7 @@ namespace KrakenService
                     continue;
                 }
 
+                string LinesToAdd = "";
                 foreach (List<string> ls in recenttrades.Datas)
                 {
                     // Foreach line, register in file and in the lsit
@@ -161,27 +213,77 @@ namespace KrakenService
                     foreach (string s in ls)
                     {
                         RecordTradingDataInList(i, s, td);
-                        File.AppendAllText(filePath,s + ",");
+                        LinesToAdd += s + ",";
                         i++;
                         //Console.Write(s);
                     }
                     //Console.WriteLine();
                     ListOftradingDatas.Add(td);
-                    File.AppendAllText(filePath,Environment.NewLine);
+                    LinesToAdd += Environment.NewLine;
                 }
 
+                File.AppendAllText(filePath,LinesToAdd);
                 since = recenttrades.Last;
                 Double interval = GetServerTime().unixtime;
                 ListOftradingDatas.RemoveAll(a => a.UnixTime < (interval - IntervalInSecond));
-
-                // Sleep to avoid to reach the limit;
-                //Thread.Sleep(4000);
+                Thread.Sleep(2500);
             }
         }
 
         public void RecordOHLCData()
         {
+            long? since = null;
+            string filePath = this.CheckFileAndDirectoryOHLCData();
 
+            OHLCData lastdata = GetLastLineOHLCDataRecorded();
+            if( lastdata != null)
+            {
+                since = (long)lastdata.time;
+            }
+
+            //while (true)
+            //{
+                // Sending rate increase the meter and check if can continue ootherwise stop 4sec;
+                SRM.RateAddition(2);
+                OHLCReceived = this.GetOHLCDatas(since);
+
+                // null if error in parsing likely due to a error message from API
+                if (OHLCReceived == null)
+                {
+                    //Thread.Sleep(4000);
+                    return;
+                }
+
+                string LinesToAdd = "";
+                foreach (List<string> ls in OHLCReceived.Datas)
+                {
+                    // Foreach line, register in file and in the lsit
+                    OHLCData td = new OHLCData();
+                    int i = 0;
+                    foreach (string s in ls)
+                    {
+                        RecordOHLCDataInList(i, s, td);
+                        LinesToAdd += s + ",";
+                        i++;
+                        //Console.Write(s);
+                    }
+                    
+                    ListOfOHLCData.Add(td);
+                    LinesToAdd += Environment.NewLine;
+                }
+
+                //File.AppendAllText(filePath,LinesToAdd);
+                using (StreamWriter writer = new StreamWriter(File.OpenWrite(filePath)))
+                {
+                    var csv = new CsvWriter(writer);
+                    csv.WriteRecords(ListOfOHLCData);
+                }
+
+                since = OHLCReceived.Last;
+                Double interval = GetServerTime().unixtime;
+                //ListOftradingDatas.RemoveAll(a => a.UnixTime < (interval - IntervalInSecond));
+                //Thread.Sleep(2500);
+            //}
         }
 
         public void RecordOrderBook()
@@ -201,52 +303,54 @@ namespace KrakenService
                     continue;
                 }
 
+                string LinesAskToAdd = "";
                 foreach (List<string> ls in ordersBook.Asks)
                 {
                     // Foreach line, register in file and in the lsit
                     CurrentOrder co = new CurrentOrder();
                     co.OrderType = "ask";
+                    LinesAskToAdd = "ask";
+
                     int i = 0;
                     foreach (string s in ls)
                     {
-                        if (i == 0)
-                            File.AppendAllText(filePath, "ask,");
-
                         RecordOrdersBookInList(i, s, co);
-                        File.AppendAllText(filePath, s + ",");
+                        LinesAskToAdd += s + ",";
                         i++;
                     }
-                    //Console.WriteLine();
+                    
                     ListOfCurrentOrder.Add(co);
-                    File.AppendAllText(filePath, Environment.NewLine);
+                    LinesAskToAdd += LinesAskToAdd + Environment.NewLine;
                 }
+                File.AppendAllText(filePath, LinesAskToAdd);
 
+                string LinesBidToAdd = "";
                 foreach(List<string> ls in ordersbook.Bids)
                 {
                     CurrentOrder co = new CurrentOrder();
                     int i = 0;
                     co.OrderType = "bid";
+                    LinesBidToAdd = "bid";
+
                     foreach(string s in ls)
                     {
-                        if (i == 0)
-                            File.AppendAllText(filePath, "bid,");
-
                         RecordOrdersBookInList(i, s, co);
-                        File.AppendAllText(filePath, s + ",");
+                        LinesBidToAdd += s + ",";
                         i++;
                     }
 
                     ListOfCurrentOrder.Add(co);
-                    File.AppendAllText(filePath, Environment.NewLine);
+                    LinesBidToAdd += LinesBidToAdd + Environment.NewLine;
                 }
-
+                File.AppendAllText(filePath, LinesBidToAdd);
+                Thread.Sleep(2500);
             }
         }
 
+        //Private
         public void RecordBalance()
         {
-            while (true)
-            {
+           
                 SRM.RateAddition(2);
                 JObject jo = JObject.Parse(client.GetBalance().ToString());
                 try
@@ -254,7 +358,7 @@ namespace KrakenService
                     if(jo["error"] != null && jo["error"].ToString() != "[]" )
                     {
                         Console.WriteLine(jo["error"]);
-                        continue;
+                        return;
                     }
 
                     CurrentBalance.BTC = Convert.ToDouble(jo["result"]["XXBT"], NumberProvider);
@@ -266,7 +370,72 @@ namespace KrakenService
                     Console.WriteLine(ex.Message);
                     // Log error
                 }
+            
+        }
+
+        public string GetOpenOrders()
+        {
+            //Sleep to avoid temporary lock out caused by GetOpenOrder() method call
+            SRM.RateAddition(2);
+            JObject obj = JObject.Parse(client.GetOpenOrders().ToString());
+            OpenedOrders.Clear();
+            try
+            {
+                JObject OpenedOrdersJson = (JObject)obj["result"]["open"];
+                // if orderID is empty, it means that no orders are currently done or th application has been stopped and started 
+                if (OpenedOrders != null && OpenedOrders.ToString() != "{}")
+                {
+                    string txid = OpenedOrdersJson.Properties().First().Name;
+                    // Foreach orders store each orders 
+                    foreach (JProperty jn in OpenedOrdersJson.Properties())
+                    {
+                        CurrentOrder openedorder = new CurrentOrder();
+                        JObject order = (JObject)OpenedOrdersJson[jn.Name];
+                        openedorder.OrderID = jn.Name;
+                        openedorder.Type = order["descr"]["type"].ToString();
+                        openedorder.OrderType = order["descr"]["ordertype"].ToString();
+                        openedorder.Price = Convert.ToDouble(order["descr"]["price"], NumberProvider);
+                        openedorder.Price2 = Convert.ToDouble(order["descr"]["price2"],NumberProvider);
+                        openedorder.Volume = Convert.ToDouble(order["vol"], NumberProvider);
+
+                        if (OpenedOrders.Count == 0 || OpenedOrders.Where(a => a.OrderID == openedorder.OrderID).Count() == 0)
+                            OpenedOrders.Add(openedorder);
+                    }
+
+                    return txid;
+                }
+                return null;
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Get Opened Order Error: " + obj["error"]);
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region Reader
+
+        public OHLCData GetLastLineOHLCDataRecorded()
+        {
+            OHLCData OHLCLastData = new OHLCData();
+
+            using (StreamReader reader = File.OpenText(CheckFileAndDirectoryOHLCData()))
+            {
+                var csv = new CsvReader(reader);
+                var records = csv.GetRecords<OHLCData>();
+                try
+                {
+                    OHLCLastData = records.OrderByDescending(a => a.time).FirstOrDefault();
+                }
+                catch(Exception)
+                {
+                    return null;
+                }
+            }
+
+            return OHLCLastData;
         }
 
         #endregion
@@ -297,6 +466,20 @@ namespace KrakenService
                 Directory.CreateDirectory(pathDirectory);
 
             string pathFile = Path.Combine(pathDirectory, "OrdersBook_" + DateTime.Now.Year + DateTime.Now.Month + DateTime.Now.Day);
+            if (!File.Exists(pathFile))
+                File.Create(pathFile);
+
+            return pathFile;
+        }
+
+        public string CheckFileAndDirectoryOHLCData()
+        {
+            string OHLCInterval = ConfigurationManager.AppSettings["PeriodOHLCData"];
+            string pathDirectory = Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).ToString(), "OHLCData" + Pair);
+            if (!Directory.Exists(pathDirectory))
+                Directory.CreateDirectory(pathDirectory);
+
+            string pathFile = Path.Combine(pathDirectory, "OHLCData_" + OHLCInterval);
             if (!File.Exists(pathFile))
                 File.Create(pathFile);
 
@@ -347,8 +530,40 @@ namespace KrakenService
             }
         }
 
-        #endregion 
+        public void RecordOHLCDataInList(int i, string value, OHLCData td)
+        {
+            // Create a NumberFormatInfo object and set some of its properties.
 
+            switch (i)
+            {
+                case 0:
+                    td.time = Convert.ToDouble(value, NumberProvider);
+                    break;
+                case 1:
+                    td.open = Convert.ToDouble(value, NumberProvider);
+                    break;
+                case 2:
+                    td.high = Convert.ToDouble(value, NumberProvider);
+                    break;
+                case 3:
+                    td.low = Convert.ToDouble(value, NumberProvider);
+                    break;
+                case 4:
+                    td.close = Convert.ToDouble(value, NumberProvider);
+                    break;
+                case 5:
+                    td.vwap = value;
+                    break;
+                case 6:
+                    td.volume = Convert.ToDouble(value, NumberProvider);
+                    break;
+                case 7:
+                    td.count = Convert.ToInt32(value);
+                    break;
+            }
+        }
+
+        #endregion 
 
     }
 }

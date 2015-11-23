@@ -27,6 +27,10 @@ namespace KrakenApp
 
             SendingRateManager SRM = new SendingRateManager();
              KrakenClient.KrakenClient client = new KrakenClient.KrakenClient();
+
+             //Console.WriteLine(client.GetOHLCData(pair,1440));
+             //Console.ReadKey();
+
              KrakenService.Recorder rec1 = new KrakenService.Recorder(pair,SRM);
              KrakenService.Analysier ana1 = new KrakenService.Analysier(rec1);
              KrakenService.Player play1 = new Player(ana1, rec1.Pair,SRM);
@@ -35,28 +39,47 @@ namespace KrakenApp
             while(i < 40)
             {
                 Thread.Sleep(1000);
-                Console.WriteLine(i + ",");
-                Console.WriteLine("Number :" + ana1.TradingDatasList.Count + " ; Higher:" + ana1.HigherPrice + " ; Lower: " + ana1.LowerPrice + " ; average : " + ana1.WeightedAverage + " ; Standard deviation : " + ana1.WeightedStandardDeviation);
+                Console.WriteLine("--------------------------------------");
+                Console.WriteLine("Last Middle Quote:" + ana1.LastMiddleQuote);
+                Console.WriteLine("Last Trade price:" + ana1.LastPrice);
+                Console.WriteLine("Opened order exist : " + ana1.OpenedOrdersExist());
+                Console.WriteLine("Average : " + ana1.WeightedAverage);
+                Console.WriteLine("Ecart Type : " + ana1.WeightedStandardDeviation);
                 Console.WriteLine("BTC : " + rec1.CurrentBalance.BTC + "; EURO : " + rec1.CurrentBalance.EUR);
-                i++;
                 Console.WriteLine("Sell or buy :" + ana1.SellorBuy().ToString() + " ; Potential Earning: " + ana1.PotentialPercentageOfEarning + " ; minimal earning required: " + ana1.MinimalPercentageOfEarning);
+                i++;
             }
 
             Console.ReadKey();
 
             while(true)
             {
-                Console.WriteLine(i + ",");
-                Console.WriteLine("Number :" + ana1.TradingDatasList.Count + " ; Higher:" + ana1.HigherPrice + " ; Lower: " + ana1.LowerPrice + " ; average : " + ana1.WeightedAverage + " ; Standard deviation : " + ana1.WeightedStandardDeviation);
-                Console.WriteLine("BTC : " + rec1.CurrentBalance.BTC + "; EURO : " + rec1.CurrentBalance.EUR);
-                Console.WriteLine("------");
+                
                 play1.Play();
-                Console.WriteLine("------");
+                
+                Console.WriteLine("--------------------------------------");
+                Console.WriteLine("Player Status :" + play1.playerState);
+                Console.WriteLine("Last Middle Quote:" + ana1.LastMiddleQuote);
+                Console.WriteLine("Last Trade price:" + ana1.LastPrice);
+                Console.WriteLine("Opened order exist : " + ana1.OpenedOrdersExist());
+                Console.WriteLine("Average : " + ana1.WeightedAverage);
+                Console.WriteLine("Ecart Type : " + ana1.WeightedStandardDeviation);
+                Console.WriteLine("BTC : " + rec1.CurrentBalance.BTC + "; EURO : " + rec1.CurrentBalance.EUR);
+                Console.WriteLine("Sell or buy :" + ana1.SellorBuy().ToString() + " ; Potential Earning: " + ana1.PotentialPercentageOfEarning + " ; minimal earning required: " + ana1.MinimalPercentageOfEarning);
                 Thread.Sleep(1000);
             }       
            
         }
 
-        
+         public static void test(SendingRateManager SRM)
+        {
+                int i = 0;
+            while(true)
+            {
+                Thread.Sleep(100);
+                i++;
+                Console.WriteLine(SRM.meter + ",");
+            }
+        }
     }
 }

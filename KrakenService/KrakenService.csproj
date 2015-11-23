@@ -30,6 +30,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="CsvHelper">
+      <HintPath>..\packages\CsvHelper.2.13.2.0\lib\net40-client\CsvHelper.dll</HintPath>
+    </Reference>
     <Reference Include="Jayrock">
       <HintPath>..\packages\jayrock.0.9.16530.1\lib\net40\Jayrock.dll</HintPath>
     </Reference>
@@ -53,6 +56,7 @@
     <Compile Include="Analysier.cs" />
     <Compile Include="KrakenObjects\Balance.cs" />
     <Compile Include="KrakenObjects\CurrentOrder.cs" />
+    <Compile Include="KrakenObjects\OHLCData.cs" />
     <Compile Include="KrakenObjects\OrdersBook.cs" />
     <Compile Include="KrakenObjects\RecentTrades.cs" />
     <Compile Include="KrakenObjects\SendingRateManager.cs" />
