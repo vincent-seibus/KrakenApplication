@@ -123,6 +123,7 @@ namespace KrakenService
             {
                 playerState = PlayerState.Bought;
                 Console.WriteLine("Bought !!");
+                analysier.recorder.RecordBalance();
                 return;
             }
 
@@ -140,13 +141,13 @@ namespace KrakenService
             {
                 playerState = PlayerState.Sold;
                 Console.WriteLine("Sold !!");
+                analysier.recorder.RecordBalance();
                 return;
             }
 
             if (analysier.CancelOpenedOrder())
             {
-                Cancel(analysier.MyOpenedOrders.First().OrderID);
-                Console.WriteLine("Order Cancelled");
+                playerState = PlayerState.ToCancel;
                 return;
             }
 
@@ -178,13 +179,7 @@ namespace KrakenService
 
                 // SOLD -----------------------------
                 case PlayerState.Sold:
-                    // Check if the analysier is ok to buy or sell with the current market data
-                    if (!analysier.SellorBuy())
-                    {
-                        Console.WriteLine("DON'T BUY - Margin too low !!");
-                        break;
-                    }
-                    playerState = PlayerState.ToBuy;
+                    playerState = PlayerState.Pending;
                     break;
 
                 // BOUGHT -----------------------------
@@ -250,6 +245,7 @@ namespace KrakenService
                 if(resp["error"] == null || resp["error"].ToString() == "[]")
                 {
                     playerState = PlayerState.Cancelled;
+                    analysier.MyOpenedOrders.Clear();
                     Console.WriteLine("Order Cancelled");
                 }
                 else

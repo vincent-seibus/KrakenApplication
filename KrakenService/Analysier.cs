@@ -188,7 +188,8 @@ namespace KrakenService
         public void GetVolumeToBuy()
         {
             recorder.RecordBalance();
-            VolumeToBuy = CurrentBalance.EUR / PriceToBuyStopLoss;
+            BuyAverageAndStandardDeviation();
+            VolumeToBuy = CurrentBalance.EUR / PriceToBuyProfit;
         }
 
         public void GetVolumeToSell()
