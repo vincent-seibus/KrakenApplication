@@ -1,0 +1,33 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8">
+    <title></title>
+</head>
+<body>
+    <div>
+        <p> Meter Count : <b id="MeterCount">18</b> ------ Last Action : <b id="LastAction">RecordRecentTradeData</b> </p>
+        <p> Last DateTime : <b id="DateTime">1448474742</b> Seconds</p>
+        <p> Last Trade : <b id="LastPrice">306,7</b></p>
+        <p> Last Middle Quote : <b id="LastMiddleQuote">306,699995</b></p>
+        <p> Last lower ask : <b id="LastLowerAsk">306,7</b></p>
+        <p> Last higher bid : <b id="LastHigherBid">306,69999</b></p>
+   </div>
+
+    <script type="text/javascript">
+    setTimeout(function () {
+        window.location.reload(1);
+    }, 1000);
+    
+    var i = 1;
+    
+   /*/ setInterval(function () {
+        document.getElementById('Seconds').innerHTML = '';
+        document.getElementById('Seconds').innerHTML = i;
+        i = i + 1;
+    }, 1000);
+    //*/
+</script>
+</body>
+</html>

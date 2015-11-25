@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HtmlAgilityPack;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -27,6 +28,8 @@ namespace KrakenService.KrakenObjects
                 }
 
                 Thread.Sleep(2000);
+
+                HTMLUpdate("MeterCount", meter.ToString());
             }
         }
 
@@ -37,6 +40,22 @@ namespace KrakenService.KrakenObjects
                 Thread.Sleep(rate * 2000);
             }
                 meter = meter + rate;
+        }
+
+        public void HTMLUpdate(string ElementId, string valueToUpdate)
+        {
+            try
+            {
+                HtmlDocument doc = new HtmlDocument();
+                doc.Load(@"C:\Users\vlemaitre\Documents\GitHub\KrakenApplication\KrakenApp\ResultPage.html");
+                HtmlNode lastprice = doc.GetElementbyId(ElementId);
+                lastprice.InnerHtml = valueToUpdate;
+                doc.Save(@"C:\Users\vlemaitre\Documents\GitHub\KrakenApplication\KrakenApp\ResultPage.html");
+            }
+            catch (Exception)
+            {
+
+            }
         }
     }
 }

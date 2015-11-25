@@ -24,6 +24,8 @@ namespace KrakenService
         public Balance CurrentBalance { get; set; }
         public double LastPrice { get; set; }
         public double LastMiddleQuote { get; set; }
+        public double LastLowerAsk { get; set; }
+        public double LastHigherBid { get; set; }
         public double StochasticKIndex { get; set; }
         public double StochasticDIndex { get; set; }
         public double RSIIndex { get; set; }
@@ -156,8 +158,8 @@ namespace KrakenService
             try
             {
 
-                double LastLowerAsk = Convert.ToDouble(ordersBook.Where(a => a.OrderType == "ask").OrderBy(a => a.Price).FirstOrDefault().Price);
-                double LastHigherBid = Convert.ToDouble(ordersBook.Where(a => a.OrderType == "bid").OrderByDescending(a => a.Price).FirstOrDefault().Price);
+                LastLowerAsk = Convert.ToDouble(ordersBook.Where(a => a.OrderType == "ask").OrderBy(a => a.Price).FirstOrDefault().Price);
+                LastHigherBid = Convert.ToDouble(ordersBook.Where(a => a.OrderType == "bid").OrderByDescending(a => a.Price).FirstOrDefault().Price);
                 LastMiddleQuote = (LastHigherBid + LastLowerAsk) / 2;
                 return LastMiddleQuote;
             }

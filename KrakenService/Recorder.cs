@@ -12,6 +12,7 @@ using System.Configuration;
 using KrakenClient;
 using System.Globalization;
 using CsvHelper;
+using HtmlAgilityPack;
 
 namespace KrakenService
 {
@@ -192,8 +193,9 @@ namespace KrakenService
 
             while (true)
             {
-                // Sending rate increase the meter and check if can continue ootherwise stop 4sec;
+                // Sending rate increase the meter and check if can continue ootherwise stop 4sec;               
                 SRM.RateAddition(2);
+                HTMLUpdate("LastAction", "RecordRecentTradeData");
 
                 recenttrades = this.GetRecentTrades(since);
 
@@ -243,8 +245,9 @@ namespace KrakenService
 
             //while (true)
             //{
-                // Sending rate increase the meter and check if can continue ootherwise stop 4sec;
+                // Sending rate increase the meter and check if can continue ootherwise stop 4sec;              
                 SRM.RateAddition(2);
+                HTMLUpdate("LastAction", "RecordOHLCData");
                 OHLCReceived = this.GetOHLCDatas(since);
 
                 // null if error in parsing likely due to a error message from API
@@ -294,6 +297,7 @@ namespace KrakenService
             {
                 // Sending rate increase the meter and check if can continue ootherwise stop 4sec;
                 SRM.RateAddition(2);
+                HTMLUpdate("LastAction", "RecordOrderBook");
 
                 var ordersbook = this.GetOrdersBook();
 
@@ -349,9 +353,9 @@ namespace KrakenService
 
         //Private
         public void RecordBalance()
-        {
-           
+        {              
                 SRM.RateAddition(2);
+                HTMLUpdate("LastAction", "RecordBalance");
                 JObject jo = JObject.Parse(client.GetBalance().ToString());
                 try
                 {
@@ -375,8 +379,11 @@ namespace KrakenService
 
         public string GetOpenOrders()
         {
+           
             //Sleep to avoid temporary lock out caused by GetOpenOrder() method call
             SRM.RateAddition(2);
+            HTMLUpdate("LastAction", "GetOpenOrders");
+
             JObject obj = JObject.Parse(client.GetOpenOrders().ToString());
             OpenedOrders.Clear();
             try
@@ -586,6 +593,22 @@ namespace KrakenService
                 case 7:
                     td.count = Convert.ToInt32(value);
                     break;
+            }
+        }
+
+        public void HTMLUpdate(string ElementId, string valueToUpdate)
+        {
+            try
+            {
+                HtmlDocument doc = new HtmlDocument();
+                doc.Load(@"C:\Users\vlemaitre\Documents\GitHub\KrakenApplication\KrakenApp\ResultPage.html");
+                HtmlNode lastprice = doc.GetElementbyId(ElementId);
+                lastprice.InnerHtml = valueToUpdate;
+                doc.Save(@"C:\Users\vlemaitre\Documents\GitHub\KrakenApplication\KrakenApp\ResultPage.html");
+            }
+            catch(Exception)
+            {
+
             }
         }
 

@@ -14,6 +14,7 @@ using KrakenService;
 using KrakenService.KrakenObjects;
 using System.Threading;
 using System.Globalization;
+using HtmlAgilityPack;
 
 
 namespace KrakenApp
@@ -22,6 +23,8 @@ namespace KrakenApp
     {
         static void Main(string[] args)
         {
+                  
+
             // The pair we will work on
             string pair = "XXBTZEUR";
 
@@ -41,6 +44,14 @@ namespace KrakenApp
             int i = 0;
             while(i < 40)
             {
+                
+                Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+                HTMLUpdate("DateTime", unixTimestamp.ToString());
+                HTMLUpdate("LastPrice", ana1.LastPrice.ToString());
+                HTMLUpdate("LastMiddleQuote", ana1.LastMiddleQuote.ToString());
+                HTMLUpdate("LastLowerAsk", ana1.LastLowerAsk.ToString());
+                HTMLUpdate("LastHigherBid", ana1.LastHigherBid.ToString());
+
                 Thread.Sleep(1000);
                 Console.WriteLine("--------------------------------------");
                 Console.WriteLine("Last Middle Quote:" + ana1.LastMiddleQuote);
@@ -52,14 +63,15 @@ namespace KrakenApp
                 Console.WriteLine("Sell or buy :" + ana1.SellorBuy().ToString() + " ; Potential Earning: " + ana1.PotentialPercentageOfEarning + " ; minimal earning required: " + ana1.MinimalPercentageOfEarning);
                 i++;
             }
-
+            Console.WriteLine("--------------------------------------");
             Console.ReadKey();
 
             while(true)
             {
-                
-                play1.Play();
-                
+                Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+                HTMLUpdate("DateTime", unixTimestamp.ToString());
+
+                play1.Play();              
                 Console.WriteLine("--------------------------------------");
                 Console.WriteLine("Player Status :" + play1.playerState);
                 Console.WriteLine("Last Middle Quote:" + ana1.LastMiddleQuote);
@@ -74,14 +86,19 @@ namespace KrakenApp
            
         }
 
-         public static void test(SendingRateManager SRM)
+        public static void HTMLUpdate(string ElementId, string valueToUpdate)
         {
-                int i = 0;
-            while(true)
+            try
             {
-                Thread.Sleep(100);
-                i++;
-                Console.WriteLine(SRM.meter + ",");
+                HtmlDocument doc = new HtmlDocument();
+                doc.Load(@"C:\Users\vlemaitre\Documents\GitHub\KrakenApplication\KrakenApp\ResultPage.html");
+                HtmlNode lastprice = doc.GetElementbyId(ElementId);
+                lastprice.InnerHtml = valueToUpdate;
+                doc.Save(@"C:\Users\vlemaitre\Documents\GitHub\KrakenApplication\KrakenApp\ResultPage.html");
+            }
+            catch (Exception)
+            {
+
             }
         }
     }
