@@ -72,6 +72,16 @@ namespace KrakenService
             Task.Run(() => RecordOHLCData());
         }
 
+        public void GetRecordsRegularly()
+        {
+            while(true)
+            {
+                RecordRecentTradeData();
+                RecordOrderBook();
+                RecordOHLCData();   
+            }
+        }
+
         #region Deserialize method
 
         public ServerTime GetServerTime()
@@ -191,45 +201,43 @@ namespace KrakenService
             long? since = null;
             string filePath = CheckFileAndDirectoryTradingData();
 
-            while (true)
+          
+            // Sending rate increase the meter and check if can continue ootherwise stop 4sec;               
+            SRM.RateAddition(2);
+            HTMLUpdate("LastAction", "RecordRecentTradeData");
+
+            recenttrades = this.GetRecentTrades(since);
+
+            // null if error in parsing likely due to a error message from API
+            if(recenttrades == null)
             {
-                // Sending rate increase the meter and check if can continue ootherwise stop 4sec;               
-                SRM.RateAddition(2);
-                HTMLUpdate("LastAction", "RecordRecentTradeData");
-
-                recenttrades = this.GetRecentTrades(since);
-
-                // null if error in parsing likely due to a error message from API
-                if(recenttrades == null)
-                {
-                    //Thread.Sleep(4000);
-                    continue;
-                }
-
-                string LinesToAdd = "";
-                foreach (List<string> ls in recenttrades.Datas)
-                {
-                    // Foreach line, register in file and in the lsit
-                    TradingData td = new TradingData();
-                    int i = 0;
-                    foreach (string s in ls)
-                    {
-                        RecordTradingDataInList(i, s, td);
-                        LinesToAdd += s + ",";
-                        i++;
-                        //Console.Write(s);
-                    }
-                    //Console.WriteLine();
-                    ListOftradingDatas.Add(td);
-                    LinesToAdd += Environment.NewLine;
-                }
-
-                File.AppendAllText(filePath,LinesToAdd);
-                since = recenttrades.Last;
-                Double interval = GetServerTime().unixtime;
-                ListOftradingDatas.RemoveAll(a => a.UnixTime < (interval - IntervalInSecond));
-                Thread.Sleep(2500);
+                    
+                return;
             }
+
+            string LinesToAdd = "";
+            foreach (List<string> ls in recenttrades.Datas)
+            {
+                // Foreach line, register in file and in the lsit
+                TradingData td = new TradingData();
+                int i = 0;
+                foreach (string s in ls)
+                {
+                    RecordTradingDataInList(i, s, td);
+                    LinesToAdd += s + ",";
+                    i++;
+                    //Console.Write(s);
+                }
+                //Console.WriteLine();
+                ListOftradingDatas.Add(td);
+                LinesToAdd += Environment.NewLine;
+            }
+
+            File.AppendAllText(filePath,LinesToAdd);
+            since = recenttrades.Last;
+            Double interval = GetServerTime().unixtime;
+            ListOftradingDatas.RemoveAll(a => a.UnixTime < (interval - IntervalInSecond));                
+            
         }
 
         public void RecordOHLCData()
@@ -243,113 +251,109 @@ namespace KrakenService
                 since = (long)lastdata.time;
             }
 
-            //while (true)
-            //{
-                // Sending rate increase the meter and check if can continue ootherwise stop 4sec;              
-                SRM.RateAddition(2);
-                HTMLUpdate("LastAction", "RecordOHLCData");
-                OHLCReceived = this.GetOHLCDatas(since);
+           
+            // Sending rate increase the meter and check if can continue ootherwise stop 4sec;              
+            SRM.RateAddition(2);
+            HTMLUpdate("LastAction", "RecordOHLCData");
+            OHLCReceived = this.GetOHLCDatas(since);
 
-                // null if error in parsing likely due to a error message from API
-                if (OHLCReceived == null)
+            // null if error in parsing likely due to a error message from API
+            if (OHLCReceived == null)
+            {
+                //Thread.Sleep(4000);
+                return;
+            }
+
+            string LinesToAdd = "";
+            foreach (List<string> ls in OHLCReceived.Datas)
+            {
+                // Foreach line, register in file and in the lsit
+                OHLCData td = new OHLCData();
+                int i = 0;
+                foreach (string s in ls)
                 {
-                    //Thread.Sleep(4000);
-                    return;
+                    RecordOHLCDataInList(i, s, td);
+                    LinesToAdd += s + ",";
+                    i++;
+                    //Console.Write(s);
                 }
-
-                string LinesToAdd = "";
-                foreach (List<string> ls in OHLCReceived.Datas)
-                {
-                    // Foreach line, register in file and in the lsit
-                    OHLCData td = new OHLCData();
-                    int i = 0;
-                    foreach (string s in ls)
-                    {
-                        RecordOHLCDataInList(i, s, td);
-                        LinesToAdd += s + ",";
-                        i++;
-                        //Console.Write(s);
-                    }
                     
-                    ListOfOHLCData.Add(td);
-                    LinesToAdd += Environment.NewLine;
-                }
+                ListOfOHLCData.Add(td);
+                LinesToAdd += Environment.NewLine;
+            }
 
-                //File.AppendAllText(filePath,LinesToAdd);
-                using (StreamWriter writer = new StreamWriter(File.OpenWrite(filePath)))
-                {
-                    var csv = new CsvWriter(writer);
-                    csv.WriteRecords(ListOfOHLCData);
-                }
+            //File.AppendAllText(filePath,LinesToAdd);
+            using (StreamWriter writer = new StreamWriter(File.OpenWrite(filePath)))
+            {
+                var csv = new CsvWriter(writer);
+                csv.WriteRecords(ListOfOHLCData);
+            }
 
-                since = OHLCReceived.Last;
-                Double interval = GetServerTime().unixtime;
-                //ListOftradingDatas.RemoveAll(a => a.UnixTime < (interval - IntervalInSecond));
-                //Thread.Sleep(2500);
-            //}
+            since = OHLCReceived.Last;
+            Double interval = GetServerTime().unixtime;
+            //ListOftradingDatas.RemoveAll(a => a.UnixTime < (interval - IntervalInSecond));
+                            
         }
 
         public void RecordOrderBook()
         {
             string filePath = CheckFileAndDirectoryOrdersBook();
 
-            while(true)
+           
+            // Sending rate increase the meter and check if can continue ootherwise stop 4sec;
+            SRM.RateAddition(2);
+            HTMLUpdate("LastAction", "RecordOrderBook");
+
+            var ordersbook = this.GetOrdersBook();
+
+            // null if error in parsing likely due to a error message from API
+            if (ordersbook == null)
             {
-                // Sending rate increase the meter and check if can continue ootherwise stop 4sec;
-                SRM.RateAddition(2);
-                HTMLUpdate("LastAction", "RecordOrderBook");
-
-                var ordersbook = this.GetOrdersBook();
-
-                // null if error in parsing likely due to a error message from API
-                if (ordersbook == null)
-                {
-                    continue;
-                }
-
-                string LinesAskToAdd = "";
-                foreach (List<string> ls in ordersBook.Asks)
-                {
-                    // Foreach line, register in file and in the lsit
-                    CurrentOrder co = new CurrentOrder();
-                    co.OrderType = "ask";
-                    LinesAskToAdd = "ask";
-
-                    int i = 0;
-                    foreach (string s in ls)
-                    {
-                        RecordOrdersBookInList(i, s, co);
-                        LinesAskToAdd += s + ",";
-                        i++;
-                    }
-                    
-                    ListOfCurrentOrder.Add(co);
-                    LinesAskToAdd += LinesAskToAdd + Environment.NewLine;
-                }
-                File.AppendAllText(filePath, LinesAskToAdd);
-
-                string LinesBidToAdd = "";
-                foreach(List<string> ls in ordersbook.Bids)
-                {
-                    CurrentOrder co = new CurrentOrder();
-                    int i = 0;
-                    co.OrderType = "bid";
-                    LinesBidToAdd = "bid";
-
-                    foreach(string s in ls)
-                    {
-                        RecordOrdersBookInList(i, s, co);
-                        LinesBidToAdd += s + ",";
-                        i++;
-                    }
-
-                    ListOfCurrentOrder.Add(co);
-                    LinesBidToAdd += LinesBidToAdd + Environment.NewLine;
-                }
-                File.AppendAllText(filePath, LinesBidToAdd);
-                Thread.Sleep(2500);
+                return;
             }
-        }
+
+            string LinesAskToAdd = "";
+            foreach (List<string> ls in ordersBook.Asks)
+            {
+                // Foreach line, register in file and in the lsit
+                CurrentOrder co = new CurrentOrder();
+                co.OrderType = "ask";
+                LinesAskToAdd = "ask";
+
+                int i = 0;
+                foreach (string s in ls)
+                {
+                    RecordOrdersBookInList(i, s, co);
+                    LinesAskToAdd += s + ",";
+                    i++;
+                }
+                    
+                ListOfCurrentOrder.Add(co);
+                LinesAskToAdd += LinesAskToAdd + Environment.NewLine;
+            }
+            File.AppendAllText(filePath, LinesAskToAdd);
+
+            string LinesBidToAdd = "";
+            foreach(List<string> ls in ordersbook.Bids)
+            {
+                CurrentOrder co = new CurrentOrder();
+                int i = 0;
+                co.OrderType = "bid";
+                LinesBidToAdd = "bid";
+
+                foreach(string s in ls)
+                {
+                    RecordOrdersBookInList(i, s, co);
+                    LinesBidToAdd += s + ",";
+                    i++;
+                }
+
+                ListOfCurrentOrder.Add(co);
+                LinesBidToAdd += LinesBidToAdd + Environment.NewLine;
+            }
+            File.AppendAllText(filePath, LinesBidToAdd);
+             
+         }
 
         //Private
         public void RecordBalance()
