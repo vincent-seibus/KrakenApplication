@@ -15,6 +15,7 @@ using KrakenService.KrakenObjects;
 using System.Threading;
 using System.Globalization;
 using HtmlAgilityPack;
+using System.Configuration;
 
 
 namespace KrakenApp
@@ -70,6 +71,10 @@ namespace KrakenApp
             {
                 Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
                 HTMLUpdate("DateTime", unixTimestamp.ToString());
+                HTMLUpdate("LastPrice", ana1.LastPrice.ToString());
+                HTMLUpdate("LastMiddleQuote", ana1.LastMiddleQuote.ToString());
+                HTMLUpdate("LastLowerAsk", ana1.LastLowerAsk.ToString());
+                HTMLUpdate("LastHigherBid", ana1.LastHigherBid.ToString());
 
                 play1.Play();              
                 Console.WriteLine("--------------------------------------");
@@ -88,13 +93,14 @@ namespace KrakenApp
 
         public static void HTMLUpdate(string ElementId, string valueToUpdate)
         {
+            
             try
             {
                 HtmlDocument doc = new HtmlDocument();
-                doc.Load(@"C:\Users\vlemaitre\Documents\GitHub\KrakenApplication\KrakenApp\ResultPage.html");
+                doc.Load(ConfigurationManager.AppSettings["UrlHtmlFile"]);//@"C:\Users\vlemaitre\Documents\GitHub\KrakenApplication\KrakenApp\ResultPage.html");
                 HtmlNode lastprice = doc.GetElementbyId(ElementId);
                 lastprice.InnerHtml = valueToUpdate;
-                doc.Save(@"C:\Users\vlemaitre\Documents\GitHub\KrakenApplication\KrakenApp\ResultPage.html");
+                doc.Save(ConfigurationManager.AppSettings["UrlHtmlFile"]);//@"C:\Users\vlemaitre\Documents\GitHub\KrakenApplication\KrakenApp\ResultPage.html");
             }
             catch (Exception)
             {

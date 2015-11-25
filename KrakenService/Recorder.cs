@@ -67,18 +67,22 @@ namespace KrakenService
             // Start recording 
             GetOpenOrders();
             RecordBalance();
-            Task.Run(() => RecordRecentTradeData());
-            Task.Run(() => RecordOrderBook());
-            Task.Run(() => RecordOHLCData());
+            Task.Run(() => GetRecordsRegularly());
         }
 
         public void GetRecordsRegularly()
         {
+            long? sinceOHLCdata = null;
+            long? sinceTradeData = null;
+
             while(true)
             {
-                RecordRecentTradeData();
+                sinceTradeData = RecordRecentTradeData(sinceTradeData);
+                Thread.Sleep(1000);
                 RecordOrderBook();
-                RecordOHLCData();   
+                Thread.Sleep(1000);
+                sinceOHLCdata = RecordOHLCData(sinceOHLCdata);
+                Thread.Sleep(1000);
             }
         }
 
@@ -102,6 +106,7 @@ namespace KrakenService
 
         public RecentTrades GetRecentTrades(long? since)
         {
+            recenttrades = null;
             JObject jo = JObject.Parse(client.GetRecentTrades(Pair, since).ToString());
             try
             {
@@ -130,6 +135,7 @@ namespace KrakenService
 
         public RecentTrades GetOHLCDatas(long? since)
         {
+            recenttrades = null;
             int PeriodOHLCData = Convert.ToInt16(ConfigurationManager.AppSettings["PeriodOHLCData"]);
 
             JObject jo = JObject.Parse(client.GetOHLCData(Pair,PeriodOHLCData,since).ToString());
@@ -196,12 +202,16 @@ namespace KrakenService
 
         #region Record region
         //Public
-        public void RecordRecentTradeData()
+        public long? RecordRecentTradeData(long? since)
         {
-            long? since = null;
-            string filePath = CheckFileAndDirectoryTradingData();
+            TradingData lastdata = GetLastTradingRecord();
+            if (lastdata != null && since == null)
+            {
+                since = (long)lastdata.UnixTime;
+            }
 
-          
+            string filePath = CheckFileAndDirectoryTradingData();
+                
             // Sending rate increase the meter and check if can continue ootherwise stop 4sec;               
             SRM.RateAddition(2);
             HTMLUpdate("LastAction", "RecordRecentTradeData");
@@ -211,11 +221,9 @@ namespace KrakenService
             // null if error in parsing likely due to a error message from API
             if(recenttrades == null)
             {
-                    
-                return;
+                return null;
             }
 
-            string LinesToAdd = "";
             foreach (List<string> ls in recenttrades.Datas)
             {
                 // Foreach line, register in file and in the lsit
@@ -224,29 +232,31 @@ namespace KrakenService
                 foreach (string s in ls)
                 {
                     RecordTradingDataInList(i, s, td);
-                    LinesToAdd += s + ",";
                     i++;
-                    //Console.Write(s);
                 }
-                //Console.WriteLine();
+
                 ListOftradingDatas.Add(td);
-                LinesToAdd += Environment.NewLine;
             }
 
-            File.AppendAllText(filePath,LinesToAdd);
+            using (StreamWriter writer = new StreamWriter(File.OpenWrite(filePath)))
+            {
+                var csv = new CsvWriter(writer);
+                csv.WriteRecords(ListOftradingDatas);
+            }
+
             since = recenttrades.Last;
             Double interval = GetServerTime().unixtime;
-            ListOftradingDatas.RemoveAll(a => a.UnixTime < (interval - IntervalInSecond));                
-            
+            ListOftradingDatas.RemoveAll(a => a.UnixTime < (interval - IntervalInSecond));
+
+            return since;
         }
 
-        public void RecordOHLCData()
+        public long? RecordOHLCData(long? since)
         {
-            long? since = null;
             string filePath = this.CheckFileAndDirectoryOHLCData();
 
             OHLCData lastdata = GetLastLineOHLCDataRecorded();
-            if( lastdata != null)
+            if( lastdata != null && since == null)
             {
                 since = (long)lastdata.time;
             }
@@ -260,11 +270,9 @@ namespace KrakenService
             // null if error in parsing likely due to a error message from API
             if (OHLCReceived == null)
             {
-                //Thread.Sleep(4000);
-                return;
+                return null ;
             }
 
-            string LinesToAdd = "";
             foreach (List<string> ls in OHLCReceived.Datas)
             {
                 // Foreach line, register in file and in the lsit
@@ -273,16 +281,12 @@ namespace KrakenService
                 foreach (string s in ls)
                 {
                     RecordOHLCDataInList(i, s, td);
-                    LinesToAdd += s + ",";
                     i++;
-                    //Console.Write(s);
                 }
                     
                 ListOfOHLCData.Add(td);
-                LinesToAdd += Environment.NewLine;
             }
 
-            //File.AppendAllText(filePath,LinesToAdd);
             using (StreamWriter writer = new StreamWriter(File.OpenWrite(filePath)))
             {
                 var csv = new CsvWriter(writer);
@@ -290,16 +294,13 @@ namespace KrakenService
             }
 
             since = OHLCReceived.Last;
-            Double interval = GetServerTime().unixtime;
-            //ListOftradingDatas.RemoveAll(a => a.UnixTime < (interval - IntervalInSecond));
-                            
+            return since;
         }
 
         public void RecordOrderBook()
         {
             string filePath = CheckFileAndDirectoryOrdersBook();
 
-           
             // Sending rate increase the meter and check if can continue ootherwise stop 4sec;
             SRM.RateAddition(2);
             HTMLUpdate("LastAction", "RecordOrderBook");
@@ -312,47 +313,43 @@ namespace KrakenService
                 return;
             }
 
-            string LinesAskToAdd = "";
             foreach (List<string> ls in ordersBook.Asks)
             {
                 // Foreach line, register in file and in the lsit
                 CurrentOrder co = new CurrentOrder();
                 co.OrderType = "ask";
-                LinesAskToAdd = "ask";
 
                 int i = 0;
                 foreach (string s in ls)
                 {
                     RecordOrdersBookInList(i, s, co);
-                    LinesAskToAdd += s + ",";
                     i++;
                 }
                     
                 ListOfCurrentOrder.Add(co);
-                LinesAskToAdd += LinesAskToAdd + Environment.NewLine;
             }
-            File.AppendAllText(filePath, LinesAskToAdd);
 
-            string LinesBidToAdd = "";
             foreach(List<string> ls in ordersbook.Bids)
             {
                 CurrentOrder co = new CurrentOrder();
                 int i = 0;
                 co.OrderType = "bid";
-                LinesBidToAdd = "bid";
 
                 foreach(string s in ls)
                 {
                     RecordOrdersBookInList(i, s, co);
-                    LinesBidToAdd += s + ",";
                     i++;
                 }
 
                 ListOfCurrentOrder.Add(co);
-                LinesBidToAdd += LinesBidToAdd + Environment.NewLine;
             }
-            File.AppendAllText(filePath, LinesBidToAdd);
-             
+            
+            using (StreamWriter writer = new StreamWriter(File.OpenWrite(filePath)))
+            {
+                var csv = new CsvWriter(writer);
+                csv.WriteRecords(ListOfCurrentOrder);
+            } 
+
          }
 
         //Private
@@ -470,6 +467,27 @@ namespace KrakenService
             return OHLCLastRows;
         }
 
+        public TradingData GetLastTradingRecord()
+        {
+            TradingData LastTradingData = new TradingData();
+
+            using (StreamReader reader = File.OpenText(CheckFileAndDirectoryTradingData()))
+            {
+                var csv = new CsvReader(reader);
+                var records = csv.GetRecords<TradingData>();
+                try
+                {
+                    LastTradingData = records.OrderByDescending(a => a.UnixTime).FirstOrDefault();
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
+            }
+
+            return LastTradingData;
+        }
+
         #endregion
 
         #region helpers
@@ -484,9 +502,14 @@ namespace KrakenService
             if(!Directory.Exists(pathDirectory))
                 Directory.CreateDirectory(pathDirectory);
 
-            string pathFile = Path.Combine(pathDirectory, "TradingData_" + DateTime.Now.Year+DateTime.Now.Month+DateTime.Now.Day);  
-            if(!File.Exists(pathFile))
-            File.Create(pathFile);
+            string pathFile = Path.Combine(pathDirectory, "TradingData_" + DateTime.Now.Year+DateTime.Now.Month+DateTime.Now.Day);
+            if (!File.Exists(pathFile))
+            {
+                using (var myFile = File.Create(pathFile))
+                {
+                    // interact with myFile here, it will be disposed automatically
+                }
+            }
 
             return pathFile;
         }
@@ -499,7 +522,12 @@ namespace KrakenService
 
             string pathFile = Path.Combine(pathDirectory, "OrdersBook_" + DateTime.Now.Year + DateTime.Now.Month + DateTime.Now.Day);
             if (!File.Exists(pathFile))
-                File.Create(pathFile);
+            {
+                using (var myFile = File.Create(pathFile))
+                {
+                    // interact with myFile here, it will be disposed automatically
+                }
+            }
 
             return pathFile;
         }
