@@ -24,8 +24,6 @@ namespace KrakenApp
     {
         static void Main(string[] args)
         {
-                  
-
             // The pair we will work on
             string pair = "XXBTZEUR";
 
