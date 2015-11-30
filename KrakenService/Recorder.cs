@@ -205,9 +205,19 @@ namespace KrakenService
         public long? RecordRecentTradeData(long? since)
         {
             TradingData lastdata = GetLastTradingRecord();
+            List<TradingData> ListRecorded = new List<TradingData>();
+
+            // check last data recorded in the file and format it.
             if (lastdata != null && since == null)
             {
-                since = (long)lastdata.UnixTime;
+                String last = Convert.ToString(lastdata.UnixTime, NumberProvider);        
+                String lastgood = last.Replace(".","");
+                while(lastgood.Length < 19)
+                {
+                    lastgood += "0";
+                }
+
+                since = Convert.ToInt64(lastgood, NumberProvider);
             }
 
             string filePath = CheckFileAndDirectoryTradingData();
@@ -235,19 +245,18 @@ namespace KrakenService
                     i++;
                 }
 
-                ListOftradingDatas.Add(td);
+                ListRecorded.Add(td);
             }
 
             using (StreamWriter writer = new StreamWriter(File.OpenWrite(filePath)))
             {
                 var csv = new CsvWriter(writer);
-                csv.WriteRecords(ListOftradingDatas);
+                csv.WriteRecords(ListRecorded);
             }
 
+            ListOftradingDatas.AddRange(ListRecorded);
             since = recenttrades.Last;
-            Double interval = GetServerTime().unixtime;
-            ListOftradingDatas.RemoveAll(a => a.UnixTime < (interval - IntervalInSecond));
-
+            ListOftradingDatas = GetListLastTradingData((int)IntervalInSecond);
             return since;
         }
 
@@ -469,15 +478,29 @@ namespace KrakenService
 
         public TradingData GetLastTradingRecord()
         {
+            List<TradingData> TradingDataList = new List<TradingData>();
             TradingData LastTradingData = new TradingData();
 
             using (StreamReader reader = File.OpenText(CheckFileAndDirectoryTradingData()))
             {
+
                 var csv = new CsvReader(reader);
-                var records = csv.GetRecords<TradingData>();
+                while (csv.Read())
+                {
+                    try
+                    {
+                        var record = csv.GetRecord<TradingData>();
+                        TradingDataList.Add(record);
+                    }
+                    catch(Exception)
+                    {
+
+                    }
+                }
+
                 try
                 {
-                    LastTradingData = records.OrderByDescending(a => a.UnixTime).FirstOrDefault();
+                    LastTradingData = TradingDataList.OrderByDescending(a => a.UnixTime).FirstOrDefault();
                 }
                 catch (Exception)
                 {
@@ -488,6 +511,39 @@ namespace KrakenService
             return LastTradingData;
         }
 
+        public List<TradingData> GetListLastTradingData(int seconds)
+        {
+            List<TradingData> LisTradingData = new List<TradingData>();
+
+            using (StreamReader reader = File.OpenText(CheckFileAndDirectoryTradingData()))
+            {
+                var csv = new CsvReader(reader);
+                while (csv.Read())
+                {
+                    try
+                    {
+                        var record = csv.GetRecord<TradingData>();
+                        LisTradingData.Add(record);
+                    }
+                    catch (Exception)
+                    {
+
+                    }
+                }
+                
+                try
+                {
+                    Double now = GetServerTime().unixtime;
+                    LisTradingData = LisTradingData.Where(a => a.UnixTime > (now - seconds)).ToList();
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
+            }
+
+            return LisTradingData;
+        }
         #endregion
 
         #region helpers

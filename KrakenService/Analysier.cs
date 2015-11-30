@@ -70,13 +70,20 @@ namespace KrakenService
         {
             while (true)
             {
-                GetWeightedAverage();
-                GetWeightedStandardDeviation();
-                GetHigherPrice();
-                GetLowerPrice();
-                GetLastMiddleQuote();
-                GetLastPrice();
-                Thread.Sleep(1000);
+                try
+                {
+                    GetWeightedAverage();
+                    GetWeightedStandardDeviation();
+                    GetHigherPrice();
+                    GetLowerPrice();
+                    GetLastMiddleQuote();
+                    GetLastPrice();
+                    Thread.Sleep(1000);
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
             }
         }
 

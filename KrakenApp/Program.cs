@@ -27,17 +27,17 @@ namespace KrakenApp
             // The pair we will work on
             string pair = "XXBTZEUR";
 
-            SendingRateManager SRM = new SendingRateManager();
+             SendingRateManager SRM = new SendingRateManager();
              KrakenClient.KrakenClient client = new KrakenClient.KrakenClient();
+              
 
              //string result = client.CancelOrder("O3V2NP-DTB7Z-EEKGIC").ToString();
-             //Console.WriteLine(result);
+             Console.WriteLine(client.GetBalance());
              //Console.ReadKey();
 
              KrakenService.Recorder rec1 = new KrakenService.Recorder(pair,SRM);
              KrakenService.Analysier ana1 = new KrakenService.Analysier(rec1);
              KrakenService.Player play1 = new Player(ana1, rec1.Pair,SRM);
-
             
 
             int i = 0;
