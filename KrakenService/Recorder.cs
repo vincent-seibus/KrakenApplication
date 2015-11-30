@@ -483,23 +483,22 @@ namespace KrakenService
 
             using (StreamReader reader = File.OpenText(CheckFileAndDirectoryTradingData()))
             {
-
-                var csv = new CsvReader(reader);
-                while (csv.Read())
-                {
-                    try
-                    {
-                        var record = csv.GetRecord<TradingData>();
-                        TradingDataList.Add(record);
-                    }
-                    catch(Exception)
-                    {
-
-                    }
-                }
-
                 try
                 {
+                    var csv = new CsvReader(reader);
+                    while (csv.Read())
+                    {
+                        try
+                        {
+                            var record = csv.GetRecord<TradingData>();
+                            TradingDataList.Add(record);
+                        }
+                        catch(Exception)
+                        {
+
+                        }
+                    }
+
                     LastTradingData = TradingDataList.OrderByDescending(a => a.UnixTime).FirstOrDefault();
                 }
                 catch (Exception)
@@ -517,22 +516,23 @@ namespace KrakenService
 
             using (StreamReader reader = File.OpenText(CheckFileAndDirectoryTradingData()))
             {
-                var csv = new CsvReader(reader);
-                while (csv.Read())
-                {
-                    try
-                    {
-                        var record = csv.GetRecord<TradingData>();
-                        LisTradingData.Add(record);
-                    }
-                    catch (Exception)
-                    {
-
-                    }
-                }
-                
                 try
                 {
+
+                    var csv = new CsvReader(reader);
+                    while (csv.Read())
+                    {
+                        try
+                        {
+                            var record = csv.GetRecord<TradingData>();
+                            LisTradingData.Add(record);
+                        }
+                        catch (Exception)
+                        {
+
+                        }
+                    }
+
                     Double now = GetServerTime().unixtime;
                     LisTradingData = LisTradingData.Where(a => a.UnixTime > (now - seconds)).ToList();
                 }
