@@ -165,7 +165,6 @@ namespace KrakenService
         {
             try
             {
-
                 LastLowerAsk = Convert.ToDouble(ordersBook.Where(a => a.OrderType == "ask").OrderBy(a => a.Price).FirstOrDefault().Price);
                 LastHigherBid = Convert.ToDouble(ordersBook.Where(a => a.OrderType == "bid").OrderByDescending(a => a.Price).FirstOrDefault().Price);
                 LastMiddleQuote = (LastHigherBid + LastLowerAsk) / 2;

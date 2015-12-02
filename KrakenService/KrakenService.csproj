@@ -61,6 +61,8 @@
     <Compile Include="KrakenObjects\Balance.cs" />
     <Compile Include="KrakenObjects\CurrentOrder.cs" />
     <Compile Include="KrakenObjects\OHLCData.cs" />
+    <Compile Include="KrakenObjects\OpenedOrder.cs" />
+    <Compile Include="KrakenObjects\OrderOfBook.cs" />
     <Compile Include="KrakenObjects\OrdersBook.cs" />
     <Compile Include="KrakenObjects\RecentTrades.cs" />
     <Compile Include="KrakenObjects\SendingRateManager.cs" />

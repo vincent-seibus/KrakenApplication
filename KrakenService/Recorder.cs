@@ -30,6 +30,7 @@ namespace KrakenService
         //Recent trade property
         public RecentTrades OHLCReceived { get; set; }
         public List<OHLCData> ListOfOHLCData { get; set; }
+       
         
         //Bablance property
         public Balance CurrentBalance { get; set; }
@@ -37,9 +38,11 @@ namespace KrakenService
         //orderbook property
         public OrdersBook ordersBook { get; set; }
         public List<CurrentOrder> ListOfCurrentOrder { get; set; }
+        public List<List<CurrentOrder>> OrderBookPerT { get; set; }
 
         // My orders section
         public List<CurrentOrder> OpenedOrders { get; set; }
+        
 
         // Config property
         // inetrval in second is the last interval of data to keep 
@@ -329,6 +332,9 @@ namespace KrakenService
                 return;
             }
 
+            //empty list before filling it up
+            ListOfCurrentOrder.Clear();
+
             foreach (List<string> ls in ordersBook.Asks)
             {
                 // Foreach line, register in file and in the lsit
@@ -364,7 +370,9 @@ namespace KrakenService
             {
                 var csv = new CsvWriter(writer);
                 csv.WriteRecords(ListOfCurrentOrder);
-            } 
+            }
+
+            OrderBookPerT.Add(ListOfCurrentOrder);
 
          }
 

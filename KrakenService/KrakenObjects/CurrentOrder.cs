@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace KrakenService.KrakenObjects
 {
+    [System.Obsolete("use class OrderOfBook or OpenedOrder")]
     public class CurrentOrder
     {
         public string OrderID { get; set; }
