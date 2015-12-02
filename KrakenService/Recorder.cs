@@ -62,6 +62,7 @@ namespace KrakenService
             client = new KrakenClient.KrakenClient();
             ListOftradingDatas = new List<TradingData>();
             ListOfCurrentOrder = new List<CurrentOrder>();
+            OrderBookPerT = new List<List<CurrentOrder>>();
             ListOfOHLCData = new List<OHLCData>();
             Pair = i_pair;
             IntervalInSecond = Convert.ToDouble(ConfigurationManager.AppSettings["IntervalStoredInMemoryInSecond"]); // it is to keep the data in memory from X (inetrval) to now.

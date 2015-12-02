@@ -13,7 +13,7 @@ namespace KrakenService.KrakenObjects
         public string Status { get; set; } // pending = order pending book entry ; open = open order; closed = closed order ; canceled = order canceled ; expired = order expired
         public string Opentm { get; set; } // unix timestamp of when order was placed
         public string Starttm { get; set; } // unix timestamp of order start time (or 0 if not set)
-        public string Starttm { get; set; } // unix timestamp of order end time (or 0 if not set)
+        public string Endtm { get; set; } // unix timestamp of order end time (or 0 if not set)
         public string Pair { get; set; }
 
         public string OrderType { get; set; } // ask or bid for the book / limit or market or other for my orders
@@ -61,3 +61,4 @@ oflags = comma delimited list of order flags
     fciq = prefer fee in quote currency (default if buying)
     nompp = no market price protection
 trades = array of trade ids related to order (if trades info requested and data available)
+//*/
