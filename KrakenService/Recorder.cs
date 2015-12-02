@@ -25,6 +25,7 @@ namespace KrakenService
         //Recent trade property
         public RecentTrades recenttrades { get; set; }
         public List<TradingData> ListOftradingDatas { get; set; }
+        public List<TradingData> ListOftradingDatasFiltered { get; set; } 
 
         //Recent trade property
         public RecentTrades OHLCReceived { get; set; }
@@ -67,6 +68,7 @@ namespace KrakenService
             // Start recording 
             GetOpenOrders();
             RecordBalance();
+            GetLastTradingDataRecorded();
             Task.Run(() => GetRecordsRegularly());
         }
 
@@ -205,8 +207,7 @@ namespace KrakenService
         public long? RecordRecentTradeData(long? since)
         {
             TradingData lastdata = GetLastTradingRecord();
-            List<TradingData> ListRecorded = new List<TradingData>();
-
+         
             // check last data recorded in the file and format it.
             if (lastdata != null && since == null)
             {
@@ -220,20 +221,25 @@ namespace KrakenService
                 since = Convert.ToInt64(lastgood, NumberProvider);
             }
 
-            string filePath = CheckFileAndDirectoryTradingData();
+            if (ListOftradingDatas.Count == 0 && ListOftradingDatasFiltered != null && ListOftradingDatasFiltered.Count > 0)
+            {
+                ListOftradingDatas = ListOftradingDatasFiltered;
+            }
+
+            string filePath = CheckFileAndDirectoryTradingData();          
                 
             // Sending rate increase the meter and check if can continue ootherwise stop 4sec;               
             SRM.RateAddition(2);
             HTMLUpdate("LastAction", "RecordRecentTradeData");
 
             recenttrades = this.GetRecentTrades(since);
-
             // null if error in parsing likely due to a error message from API
             if(recenttrades == null)
             {
                 return null;
             }
 
+            //Treatment of the datas and store it in list
             foreach (List<string> ls in recenttrades.Datas)
             {
                 // Foreach line, register in file and in the lsit
@@ -245,18 +251,19 @@ namespace KrakenService
                     i++;
                 }
 
-                ListRecorded.Add(td);
+                ListOftradingDatas.Add(td);
             }
 
+            // Filtered also the ListOftradingDatas to get only 86400;
             using (StreamWriter writer = new StreamWriter(File.OpenWrite(filePath)))
             {
                 var csv = new CsvWriter(writer);
-                csv.WriteRecords(ListRecorded);
+                csv.WriteRecords(ListOftradingDatas);
             }
 
-            ListOftradingDatas.AddRange(ListRecorded);
+            //record last filtered data in file
+            RecordLastTradingData();
             since = recenttrades.Last;
-            ListOftradingDatas = GetListLastTradingData((int)IntervalInSecond);
             return since;
         }
 
@@ -361,6 +368,24 @@ namespace KrakenService
 
          }
 
+        public void RecordLastTradingData()
+        {
+            string filePathLast = CheckFileAndDirectoryLastTradingData();
+
+            Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+            ListOftradingDatasFiltered = ListOftradingDatas.Where(a => a.UnixTime > (unixTimestamp - IntervalInSecond)).ToList();
+
+            // EMpty the fiel before filling it 
+            System.IO.File.WriteAllText(filePathLast, string.Empty);
+
+            // Record last trade data - over written by new data each time
+            using (StreamWriter writer = new StreamWriter(File.OpenWrite(filePathLast)))
+            {
+                var csv = new CsvWriter(writer);
+                csv.WriteRecords(ListOftradingDatasFiltered);
+            }
+        }
+
         //Private
         public void RecordBalance()
         {              
@@ -376,7 +401,7 @@ namespace KrakenService
                     }
 
                     CurrentBalance.BTC = Convert.ToDouble(jo["result"]["XXBT"], NumberProvider);
-                    CurrentBalance.EUR = Convert.ToDouble(jo["result"]["ZEUR"], NumberProvider);
+                    CurrentBalance.EUR = Convert.ToDouble(jo["result"]["ZEUR"], NumberProvider);                    
                     //Thread.Sleep(4500);
                 }
                 catch(Exception ex)
@@ -481,7 +506,7 @@ namespace KrakenService
             List<TradingData> TradingDataList = new List<TradingData>();
             TradingData LastTradingData = new TradingData();
 
-            using (StreamReader reader = File.OpenText(CheckFileAndDirectoryTradingData()))
+            using (StreamReader reader = File.OpenText(CheckFileAndDirectoryLastTradingData()))
             {
                 try
                 {
@@ -510,40 +535,34 @@ namespace KrakenService
             return LastTradingData;
         }
 
-        public List<TradingData> GetListLastTradingData(int seconds)
+        public void GetLastTradingDataRecorded()
         {
-            List<TradingData> LisTradingData = new List<TradingData>();
-
-            using (StreamReader reader = File.OpenText(CheckFileAndDirectoryTradingData()))
+            ListOftradingDatasFiltered = new List<TradingData>();
+            using (StreamReader reader = File.OpenText(CheckFileAndDirectoryLastTradingData()))
             {
                 try
                 {
-
                     var csv = new CsvReader(reader);
                     while (csv.Read())
                     {
                         try
                         {
                             var record = csv.GetRecord<TradingData>();
-                            LisTradingData.Add(record);
+                            ListOftradingDatasFiltered.Add(record);
                         }
                         catch (Exception)
                         {
 
                         }
                     }
-
-                    Double now = GetServerTime().unixtime;
-                    LisTradingData = LisTradingData.Where(a => a.UnixTime > (now - seconds)).ToList();
                 }
                 catch (Exception)
                 {
-                    return null;
+                    
                 }
             }
-
-            return LisTradingData;
         }
+
         #endregion
 
         #region helpers
@@ -559,6 +578,24 @@ namespace KrakenService
                 Directory.CreateDirectory(pathDirectory);
 
             string pathFile = Path.Combine(pathDirectory, "TradingData_" + DateTime.Now.Year+DateTime.Now.Month+DateTime.Now.Day);
+            if (!File.Exists(pathFile))
+            {
+                using (var myFile = File.Create(pathFile))
+                {
+                    // interact with myFile here, it will be disposed automatically
+                }
+            }
+
+            return pathFile;
+        }
+
+        public string CheckFileAndDirectoryLastTradingData()
+        {
+            string pathDirectory = Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).ToString(), "TradingData" + Pair);
+            if (!Directory.Exists(pathDirectory))
+                Directory.CreateDirectory(pathDirectory);
+
+            string pathFile = Path.Combine(pathDirectory, "LastTradingData");
             if (!File.Exists(pathFile))
             {
                 using (var myFile = File.Create(pathFile))

@@ -58,12 +58,13 @@ namespace KrakenService
             recorder = rec;
             Multiplicateur = Convert.ToInt16(ConfigurationManager.AppSettings["StandardDeviationMultplicateurStopLoss"]);
             TradingDatasList = new List<TradingData>();
-            TradingDatasList = rec.ListOftradingDatas;
+            TradingDatasList = rec.ListOftradingDatasFiltered;
             ordersBook = rec.ListOfCurrentOrder; 
             CurrentBalance = rec.CurrentBalance;
             MyOpenedOrders = rec.OpenedOrders;
             Pair = rec.Pair;
             Task.Run(() => Calculate());
+             Task.Run(() => GetCurrentTotalBalance());
         }
 
         public void Calculate()
@@ -175,6 +176,16 @@ namespace KrakenService
                 return LastMiddleQuote;
             }
         }
+
+        public void  GetCurrentTotalBalance()
+        {
+            while (true)
+            {
+                CurrentBalance.TotalBTC = CurrentBalance.BTC + (CurrentBalance.EUR / LastPrice);
+                CurrentBalance.TotalEUR = CurrentBalance.EUR + (CurrentBalance.BTC * LastPrice);
+                Thread.Sleep(30000);
+            }
+        }
         
         #endregion 
 
@@ -183,14 +194,12 @@ namespace KrakenService
         public void SellAverageAndStandardDeviation()
         {
             PriceToSellProfit = WeightedAverage + WeightedStandardDeviation;
-
             PriceToSellStopLoss = WeightedAverage - Multiplicateur * WeightedStandardDeviation;
         }
 
         public void BuyAverageAndStandardDeviation()
         {
             PriceToBuyProfit = WeightedAverage - WeightedStandardDeviation;
-
             PriceToBuyStopLoss = WeightedAverage + Multiplicateur * WeightedStandardDeviation;
         }
 
@@ -198,12 +207,16 @@ namespace KrakenService
         {
             recorder.RecordBalance();
             BuyAverageAndStandardDeviation();
+            CurrentBalance.TotalBTC = CurrentBalance.BTC + (CurrentBalance.EUR / PriceToBuyProfit);
+            CurrentBalance.TotalEUR = CurrentBalance.EUR + (CurrentBalance.BTC * PriceToBuyProfit);
             VolumeToBuy = CurrentBalance.EUR / PriceToBuyProfit;
         }
 
         public void GetVolumeToSell()
         {
             recorder.RecordBalance();
+            CurrentBalance.TotalBTC = CurrentBalance.BTC + (CurrentBalance.EUR / PriceToSellProfit);
+            CurrentBalance.TotalEUR = CurrentBalance.EUR + (CurrentBalance.BTC * PriceToSellProfit);
             VolumeToSell =  CurrentBalance.BTC;
         }
 
