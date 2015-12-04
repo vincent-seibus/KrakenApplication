@@ -190,6 +190,60 @@ namespace KrakenService
 
         #region result for player
 
+        /// <summary>
+        /// Method of the standard deviation and mobile average
+        /// </summary>
+        /// <param name="BuyOrSell"> define the type of order by 'buy' or 'sell' </param>
+        /// <param name="PercentagePosition"> define the percentage of th current balance to invest through this method </param>
+        public void BollingerMethod(string BuyOrSell , double? PercentagePosition = null )
+        {
+            switch(BuyOrSell)
+            {
+                case "sell":
+                    // set the price to sell
+                      PriceToSellProfit = WeightedAverage + WeightedStandardDeviation;
+                      PriceToSellStopLoss = 0;
+                    // set the volume to sell
+                      GetVolumeToSell(PercentagePosition);
+                    break;
+                case "buy":
+                    // set the price to buy
+                    PriceToBuyProfit = WeightedAverage - WeightedStandardDeviation;
+                    PriceToBuyStopLoss = 0;
+                    // set the volume to buy
+                    GetVolumeToBuy(PercentagePosition);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Method to buy and sell the smallest spread , the constraint is the fees
+        /// </summary>
+        /// <param name="BuyOrSell">define the type of order by 'buy' or 'sell'</param>
+        /// <param name="PercentagePosition">define the percentage of th current balance to invest through this method</param>
+        public void HighFrequencyMethod(string BuyOrSell, double? PercentagePosition = null)
+        {
+            switch (BuyOrSell)
+            {
+                case "sell":
+                    // set the price to sell
+                    PriceToSellProfit = (MinimalPercentageOfEarning * LastPrice / 2) + LastPrice;
+                    PriceToSellStopLoss = LastPrice - (MinimalPercentageOfEarning * LastPrice);
+                    // set the volume to sell
+                    GetVolumeToSell(PercentagePosition);
+                    break;
+                case "buy":
+                    // set the price to buy
+                    PriceToSellProfit = LastPrice - (MinimalPercentageOfEarning * LastPrice / 2);
+                    PriceToSellStopLoss = LastPrice + (MinimalPercentageOfEarning * LastPrice);
+                    // set the volume to buy
+                    GetVolumeToBuy(PercentagePosition);
+                    break;
+            }
+        }
+
+
+
         public void SellAverageAndStandardDeviation()
         {
             PriceToSellProfit = WeightedAverage + WeightedStandardDeviation;
@@ -202,16 +256,39 @@ namespace KrakenService
             PriceToBuyStopLoss = WeightedAverage + Multiplicateur * WeightedStandardDeviation;
         }
 
-        public void GetVolumeToBuy()
+        public void GetVolumeToBuy(double? PercentagePosition = null )
         {
+            // record balance and price
             recorder.RecordBalance();
             BuyAverageAndStandardDeviation();
+
+            // Get total balance adjusted by price to buy
             CurrentBalance.TotalBTC = CurrentBalance.BTC + (CurrentBalance.EUR / PriceToBuyProfit);
             CurrentBalance.TotalEUR = CurrentBalance.EUR + (CurrentBalance.BTC * PriceToBuyProfit);
-            VolumeToBuy = CurrentBalance.EUR / PriceToBuyProfit;
+
+            //Calculate volume to buy
+
+            //Check if percentage not null
+            if(PercentagePosition != null)
+            {
+                // calculate the percentage of the total balance to invest
+                VolumeToBuy = CurrentBalance.TotalBTC * (double)PercentagePosition;
+
+                // Check if not superior to the curreny balance of euro
+                if(VolumeToBuy > (CurrentBalance.EUR / PriceToBuyProfit))
+                {
+                    // return current euro balanc if yes
+                    VolumeToBuy = CurrentBalance.EUR / PriceToBuyProfit;
+                }                
+            }
+            else
+            {
+                VolumeToBuy = CurrentBalance.EUR / PriceToBuyProfit;
+            }                        
+           
         }
 
-        public void GetVolumeToSell()
+        public void GetVolumeToSell(double? PercentagePosition = null)
         {
             recorder.RecordBalance();
             CurrentBalance.TotalBTC = CurrentBalance.BTC + (CurrentBalance.EUR / PriceToSellProfit);

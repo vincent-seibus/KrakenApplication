@@ -50,8 +50,8 @@ namespace KrakenService
             SRM.RateAddition(1);
 
             //  change this method if it is different
-            analysier.SellAverageAndStandardDeviation();
-            analysier.GetVolumeToSell();
+            analysier.BollingerMethod("sell");
+            //analysier.HighFrequencyMethod("sell");
                        
 
             // create the order
@@ -63,7 +63,6 @@ namespace KrakenService
             order.Volume = Convert.ToDecimal(analysier.VolumeToSell,NumberProvider);
 
             Console.WriteLine("Sell !!! price:" + order.Price + " ; volume:" + order.Volume);
-            //Console.ReadKey();
             string response = client.AddOrder(order).ToString();
 
             //Get order id from response
@@ -89,8 +88,9 @@ namespace KrakenService
             SRM.RateAddition(1);
 
             //  change this method if it is different
-            analysier.BuyAverageAndStandardDeviation();
-            analysier.GetVolumeToBuy();
+            analysier.BollingerMethod("buy");
+            //analysier.HighFrequencyMethod("buy");
+
 
             // create the order
             KrakenOrder order = new KrakenOrder();
