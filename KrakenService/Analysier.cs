@@ -227,23 +227,24 @@ namespace KrakenService
             {
                 case "sell":
                     // set the price to sell
-                    PriceToSellProfit = (MinimalPercentageOfEarning * LastPrice / 2) + LastPrice;
+                    PriceToSellProfit = (MinimalPercentageOfEarning * LastPrice) + LastPrice;
                     PriceToSellStopLoss = LastPrice - (MinimalPercentageOfEarning * LastPrice);
                     // set the volume to sell
                     GetVolumeToSell(PercentagePosition);
                     break;
                 case "buy":
                     // set the price to buy
-                    PriceToSellProfit = LastPrice - (MinimalPercentageOfEarning * LastPrice / 2);
-                    PriceToSellStopLoss = LastPrice + (MinimalPercentageOfEarning * LastPrice);
+                    if (LastPrice < (WeightedAverage + WeightedStandardDeviation - MinimalPercentageOfEarning * LastPrice))
+                    {
+                        PriceToBuyProfit = LastPrice - (MinimalPercentageOfEarning * LastPrice / 2);
+                        PriceToBuyStopLoss = LastPrice + (MinimalPercentageOfEarning * LastPrice);
+                    }
                     // set the volume to buy
                     GetVolumeToBuy(PercentagePosition);
                     break;
             }
         }
-
-
-
+        
         public void SellAverageAndStandardDeviation()
         {
             PriceToSellProfit = WeightedAverage + WeightedStandardDeviation;
@@ -283,7 +284,7 @@ namespace KrakenService
             }
             else
             {
-                VolumeToBuy = CurrentBalance.EUR / PriceToBuyProfit;
+                VolumeToBuy =  CurrentBalance.EUR / PriceToBuyProfit - 0.01;
             }                        
            
         }
@@ -297,7 +298,6 @@ namespace KrakenService
         }
 
         // Bool method used to Go-No go decision
-
         public bool SellorBuy()
         {
             PotentialPercentageOfEarning = WeightedStandardDeviation * 2 * 100 / WeightedAverage; // it is in percent
