@@ -29,8 +29,9 @@ namespace KrakenService
 
         //Recent trade property
         public RecentTrades OHLCReceived { get; set; }
-        public List<OHLCData> ListOfOHLCData { get; set; }
-       
+        public List<OHLCData> ListOfOHLCData30 { get; set; }
+        public List<OHLCData> ListOfOHLCData60 { get; set; }
+        public List<OHLCData> ListOfOHLCData1440 { get; set; }
         
         //Bablance property
         public Balance CurrentBalance { get; set; }
@@ -63,7 +64,9 @@ namespace KrakenService
             ListOftradingDatas = new List<TradingData>();
             ListOfCurrentOrder = new List<CurrentOrder>();
             OrderBookPerT = new List<List<CurrentOrder>>();
-            ListOfOHLCData = new List<OHLCData>();
+            ListOfOHLCData1440 = new List<OHLCData>();
+            ListOfOHLCData60 = new List<OHLCData>();
+            ListOfOHLCData30 = new List<OHLCData>();
             Pair = i_pair;
             IntervalInSecond = Convert.ToDouble(ConfigurationManager.AppSettings["IntervalStoredInMemoryInSecond"]); // it is to keep the data in memory from X (inetrval) to now.
             OrderBookCount = Convert.ToInt16(ConfigurationManager.AppSettings["OrderBookCount"]);
@@ -157,7 +160,7 @@ namespace KrakenService
         public RecentTrades GetOHLCDatas(long? since, int period)
         {
             recenttrades = null;
-            int PeriodOHLCData = Convert.ToInt16(ConfigurationManager.AppSettings["PeriodOHLCData"]);
+            int PeriodOHLCData = Convert.ToInt16(period);
 
             JObject jo = JObject.Parse(client.GetOHLCData(Pair,PeriodOHLCData,since).ToString());
             try
@@ -274,7 +277,9 @@ namespace KrakenService
             }
 
             // Filtered also the ListOftradingDatas to get only 86400;
-            using (StreamWriter writer = new StreamWriter(File.OpenWrite(filePath)))
+            Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+            ListOftradingDatas = ListOftradingDatas.Where(a => a.UnixTime > (unixTimestamp - IntervalInSecond)).ToList();
+            using (StreamWriter writer = File.AppendText(filePath))
             {
                 var csv = new CsvWriter(writer);
                 csv.WriteRecords(ListOftradingDatas);
@@ -295,7 +300,6 @@ namespace KrakenService
             {
                 since = (long)lastdata.time;
             }
-
            
             // Sending rate increase the meter and check if can continue ootherwise stop 4sec;              
             SRM.RateAddition(2);
@@ -308,7 +312,7 @@ namespace KrakenService
                 return null ;
             }
 
-         
+            List<OHLCData> listtemp = new List<OHLCData>();
             foreach (List<string> ls in OHLCReceived.Datas)
             {
                 // Foreach line, register in file and in the lsit
@@ -319,16 +323,32 @@ namespace KrakenService
                     RecordOHLCDataInList(i, s, td);
                     i++;
                 }
-                    
-                ListOfOHLCData.Add(td);
+                       
+                listtemp.Add(td);
             }
-
-            using (StreamWriter writer = new StreamWriter(File.OpenWrite(filePath)))
+           
+            // Record list in file in function of period
+            using (StreamWriter writer = File.AppendText(filePath))
             {
                 var csv = new CsvWriter(writer);
-                csv.WriteRecords(ListOfOHLCData);
+                switch (period)
+                {
+                    case 1440:
+                        ListOfOHLCData1440.AddRange(listtemp);
+                        csv.WriteRecords(ListOfOHLCData1440);
+                        break;
+                    case 60:
+                        ListOfOHLCData60.AddRange(listtemp);
+                        csv.WriteRecords(ListOfOHLCData60);
+                        break;
+                    case 30:
+                        ListOfOHLCData30.AddRange(listtemp);
+                        csv.WriteRecords(ListOfOHLCData30);
+                        break;
+                }
             }
 
+            // record last period
             since = OHLCReceived.Last;
             return since;
         }
@@ -400,7 +420,7 @@ namespace KrakenService
             Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
             ListOftradingDatasFiltered = ListOftradingDatas.Where(a => a.UnixTime > (unixTimestamp - IntervalInSecond)).ToList();
 
-            // EMpty the fiel before filling it 
+            // EMpty the field before filling it 
             System.IO.File.WriteAllText(filePathLast, string.Empty);
 
             // Record last trade data - over written by new data each time

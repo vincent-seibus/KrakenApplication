@@ -217,11 +217,12 @@ namespace KrakenService
                         break;
                     }
                     // Check if it worth to buy
-                    if(!analysier.SellorBuy())
+                    /*/if(!analysier.SellorBuy())
                     {
                         Console.WriteLine("DON'T BUY - Margin too low !!");
                         break;
                     }
+                    //*/
 
                     playerState = PlayerState.ToBuy;
                     break;

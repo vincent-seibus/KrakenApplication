@@ -150,6 +150,7 @@ namespace KrakenService
 
         public double GetLastPrice()
         {
+            TradingDatasList = recorder.ListOftradingDatas;
             try
             {
                 LastPrice = Convert.ToDouble(TradingDatasList.OrderByDescending(a => a.UnixTime).FirstOrDefault().Price, NumberProvider);
