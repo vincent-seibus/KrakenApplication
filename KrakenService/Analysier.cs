@@ -221,28 +221,38 @@ namespace KrakenService
         /// </summary>
         /// <param name="BuyOrSell">define the type of order by 'buy' or 'sell'</param>
         /// <param name="PercentagePosition">define the percentage of th current balance to invest through this method</param>
-        public void HighFrequencyMethod(string BuyOrSell, double? PercentagePosition = null)
+        public PlayerState HighFrequencyMethod(string BuyOrSell, double? PercentagePosition = null)
         {
+            var status = PlayerState.Pending;
+            MinimalPercentageOfEarning = MarginOnFee + Fee;
             switch (BuyOrSell)
             {
                 case "sell":
                     // set the price to sell
-                    PriceToSellProfit = (MinimalPercentageOfEarning * LastPrice) + LastPrice;
-                    PriceToSellStopLoss = LastPrice - (MinimalPercentageOfEarning * LastPrice);
+                    PriceToSellProfit = (MinimalPercentageOfEarning * LastPrice/100) + LastPrice;
+                    PriceToSellStopLoss = LastPrice - (MinimalPercentageOfEarning * LastPrice * 2 / 100);
                     // set the volume to sell
                     GetVolumeToSell(PercentagePosition);
+                    status = PlayerState.ToSell;
                     break;
                 case "buy":
-                    // set the price to buy
-                    if (LastPrice < (WeightedAverage + WeightedStandardDeviation - MinimalPercentageOfEarning * LastPrice))
+                    if (LastPrice < (WeightedAverage + WeightedStandardDeviation - MinimalPercentageOfEarning * LastPrice/100))
                     {
-                        PriceToBuyProfit = LastPrice - (MinimalPercentageOfEarning * LastPrice / 2);
+                        // set the price to buy
+                        PriceToBuyProfit = LastPrice - (MinimalPercentageOfEarning * LastPrice / 200);
                         PriceToBuyStopLoss = LastPrice + (MinimalPercentageOfEarning * LastPrice);
+                        // set the volume to buy
+                        GetVolumeToBuy(PercentagePosition);
+                        status = PlayerState.ToBuy;
+                        break;
                     }
-                    // set the volume to buy
-                    GetVolumeToBuy(PercentagePosition);
-                    break;
+                    else
+                    {
+                        status = PlayerState.Pending;
+                        break;
+                    }
             }
+            return status;
         }
         
         public void SellAverageAndStandardDeviation()

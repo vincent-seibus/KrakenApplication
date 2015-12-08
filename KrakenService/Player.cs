@@ -40,6 +40,8 @@ namespace KrakenService
 
         public string  SellAtLimit()
         {
+            playerState = analysier.HighFrequencyMethod("sell");
+
             //Checking if the context is correct
             if(!playerState.HasFlag(PlayerState.ToSell))
             {
@@ -50,10 +52,8 @@ namespace KrakenService
             SRM.RateAddition(1);
 
             //  change this method if it is different
-            analysier.BollingerMethod("sell");
-            //analysier.HighFrequencyMethod("sell");
+            //analysier.BollingerMethod("sell");
                        
-
             // create the order
             KrakenOrder order = new KrakenOrder();
             order.Pair = "XBTEUR";
@@ -78,6 +78,8 @@ namespace KrakenService
         
         public string BuyAtLimit()
         {
+            playerState = analysier.HighFrequencyMethod("buy"); 
+
             //Checking if the context is correct
             if (!playerState.HasFlag(PlayerState.ToBuy))
             {
@@ -88,9 +90,7 @@ namespace KrakenService
             SRM.RateAddition(1);
 
             //  change this method if it is different
-            analysier.BollingerMethod("buy");
-            //analysier.HighFrequencyMethod("buy");
-
+            //analysier.BollingerMethod("buy");
 
             // create the order
             KrakenOrder order = new KrakenOrder();
