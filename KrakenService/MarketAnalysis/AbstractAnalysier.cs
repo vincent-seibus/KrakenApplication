@@ -21,7 +21,7 @@ namespace KrakenService.MarketAnalysis
         public List<OpenedOrder> MyOpenedOrders { get; set; }
 
         // Property to work
-        public List<CurrentOrder> OrdersBook { get; set; }
+        public List<OrderOfBook> OrdersBook { get; set; }
         public List<TradingData> TradingDatasList { get; set; }
         public double WeightedStandardDeviation { get; set; }
         public double WeightedAverage { get; set; }

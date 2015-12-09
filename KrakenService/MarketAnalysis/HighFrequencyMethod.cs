@@ -8,7 +8,7 @@ namespace KrakenService.MarketAnalysis
 {
     public class HighFrequencyMethod : AbstractAnalysier, IAnalysier
     {
-        public string Pair { get; set; }
+        
         public double VolumeToBuy { get; set; }
         public double VolumeToSell { get; set; }
         public double PriceToSellProfit { get; set; }

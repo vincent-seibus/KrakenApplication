@@ -38,8 +38,8 @@ namespace KrakenService
         
         //orderbook property
         public OrdersBook ordersBook { get; set; }
-        public List<CurrentOrder> ListOfCurrentOrder { get; set; }
-        public List<List<CurrentOrder>> OrderBookPerT { get; set; }
+        public List<OrderOfBook> ListOfCurrentOrder { get; set; }
+        public List<List<OrderOfBook>> OrderBookPerT { get; set; }
 
         // My orders section
         public List<CurrentOrder> OpenedOrders { get; set; }
@@ -62,8 +62,8 @@ namespace KrakenService
             CurrentBalance = new Balance();
             client = new KrakenClient.KrakenClient();
             ListOftradingDatas = new List<TradingData>();
-            ListOfCurrentOrder = new List<CurrentOrder>();
-            OrderBookPerT = new List<List<CurrentOrder>>();
+            ListOfCurrentOrder = new List<OrderOfBook>();
+            OrderBookPerT = new List<List<OrderOfBook>>();
             ListOfOHLCData1440 = new List<OHLCData>();
             ListOfOHLCData60 = new List<OHLCData>();
             ListOfOHLCData30 = new List<OHLCData>();
@@ -371,11 +371,11 @@ namespace KrakenService
 
             //empty list before filling it up
             ListOfCurrentOrder.Clear();
-
+            DateTime timeofrecord = DateTime.UtcNow;
             foreach (List<string> ls in ordersBook.Asks)
             {
                 // Foreach line, register in file and in the lsit
-                CurrentOrder co = new CurrentOrder();
+                OrderOfBook co = new OrderOfBook();
                 co.OrderType = "ask";
 
                 int i = 0;
@@ -384,13 +384,14 @@ namespace KrakenService
                     RecordOrdersBookInList(i, s, co);
                     i++;
                 }
-                    
+                co.UniqueId =  (co.OrderType + co.Price + co.Volume + co.Timestamp).GetHashCode().ToString();                
+                co.TimeRecorded = timeofrecord;
                 ListOfCurrentOrder.Add(co);
             }
 
             foreach(List<string> ls in ordersbook.Bids)
             {
-                CurrentOrder co = new CurrentOrder();
+                OrderOfBook co = new OrderOfBook();
                 int i = 0;
                 co.OrderType = "bid";
 
@@ -399,11 +400,12 @@ namespace KrakenService
                     RecordOrdersBookInList(i, s, co);
                     i++;
                 }
-
+                co.UniqueId = (co.OrderType + co.Price + co.Volume + co.Timestamp).GetHashCode().ToString();
+                co.TimeRecorded = timeofrecord;
                 ListOfCurrentOrder.Add(co);
             }
             
-            using (StreamWriter writer = new StreamWriter(File.OpenWrite(filePath)))
+            using (StreamWriter writer = File.AppendText(filePath))
             {
                 var csv = new CsvWriter(writer);
                 csv.WriteRecords(ListOfCurrentOrder);
@@ -716,7 +718,7 @@ namespace KrakenService
             }
         }
 
-        public void RecordOrdersBookInList(int i, string value, CurrentOrder order)
+        public void RecordOrdersBookInList(int i, string value, OrderOfBook order)
         {
             switch(i)
             {

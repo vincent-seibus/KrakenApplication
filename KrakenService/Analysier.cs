@@ -15,7 +15,7 @@ namespace KrakenService
         // Datas and middle result
         public Recorder recorder { get; set; }
         public List<TradingData> TradingDatasList { get; set; }
-        public List<CurrentOrder> ordersBook { get; set; }
+        public List<OrderOfBook> ordersBook { get; set; }
         public List<CurrentOrder> MyOpenedOrders { get; set; }
         public double WeightedStandardDeviation { get; set; }
         public double WeightedAverage { get; set; }
@@ -164,6 +164,7 @@ namespace KrakenService
 
         public double GetLastMiddleQuote()
         {
+            ordersBook = recorder.ListOfCurrentOrder; 
             try
             {
                 LastLowerAsk = Convert.ToDouble(ordersBook.Where(a => a.OrderType == "ask").OrderBy(a => a.Price).FirstOrDefault().Price);
