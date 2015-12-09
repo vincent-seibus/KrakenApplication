@@ -26,6 +26,8 @@ namespace KrakenService
         public double LastMiddleQuote { get; set; }
         public double LastLowerAsk { get; set; }
         public double LastHigherBid { get; set; }
+        public double LastLowerBid { get; set; }
+        public double LastHigherAsk { get; set; }
         public double StochasticKIndex { get; set; }
         public double StochasticDIndex { get; set; }
         public double RSIIndex { get; set; }
@@ -168,7 +170,9 @@ namespace KrakenService
             try
             {
                 LastLowerAsk = Convert.ToDouble(ordersBook.Where(a => a.OrderType == "ask").OrderBy(a => a.Price).FirstOrDefault().Price);
+                LastHigherAsk = Convert.ToDouble(ordersBook.Where(a => a.OrderType == "ask").OrderByDescending(a => a.Price).FirstOrDefault().Price);
                 LastHigherBid = Convert.ToDouble(ordersBook.Where(a => a.OrderType == "bid").OrderByDescending(a => a.Price).FirstOrDefault().Price);
+                LastLowerBid = Convert.ToDouble(ordersBook.Where(a => a.OrderType == "bid").OrderBy(a => a.Price).FirstOrDefault().Price);
                 LastMiddleQuote = (LastHigherBid + LastLowerAsk) / 2;
                 return LastMiddleQuote;
             }
@@ -186,11 +190,6 @@ namespace KrakenService
                 CurrentBalance.TotalEUR = CurrentBalance.EUR + (CurrentBalance.BTC * LastPrice);
                 Thread.Sleep(30000);
             }
-        }
-
-        public void GetExtremeOfAskAndBid()
-        {
-
         }
         
         #endregion 
