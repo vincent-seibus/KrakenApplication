@@ -57,7 +57,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MarketAnalysis\AbstractAnalysier.cs" />
     <Compile Include="Analysier.cs" />
+    <Compile Include="MarketAnalysis\HighFrequencyMethod.cs" />
+    <Compile Include="MarketAnalysis\IAnalysier.cs" />
     <Compile Include="KrakenObjects\Balance.cs" />
     <Compile Include="KrakenObjects\CurrentOrder.cs" />
     <Compile Include="KrakenObjects\OHLCData.cs" />
@@ -73,6 +76,7 @@
     <Compile Include="Recorder.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="config.template.text" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

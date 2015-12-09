@@ -1,0 +1,23 @@
+﻿ <appSettings>
+	<!-- config for the kraken client -->
+    <add key="KrakenBaseAddress" value="https://api.kraken.com" />
+    <add key="KrakenApiVersion" value="0" />  
+    <add key="KrakenKey" value=""/>
+    <add key="KrakenSecret" value=""/>
+
+	<!-- config for the kraken service -->
+	<add key="CurrencyDecimalSeparator" value="." />  <!-- This is the char that need to be used as separator for decimal number as per Kraken usage-->
+	
+	<!-- Recorder -->
+    <add key="IntervalStoredInMemoryInSecond" value="86400" />  <!--As per the name, in Second-->
+    <add key="OrderBookCount" value="500" /> <!--Quantity maximal of order requested -->
+
+	<!-- Analysier -->   
+    <add key="StandardDeviationMultplicateurStopLoss" value="3" /> <!--it is the multiplicateur of the standard deviation cto set up stop loss price-->    
+    <add key="FeeInPercentage" value="0.38" /> <!--in percentage 0.14% + 0.24%-->
+	<add key="MarginOnFeeInPercentage" value="0.2" /> <!--in percentage -->
+  
+   
+    <add key="UrlHtmlFile" value="C:\Users\vincent\Desktop\KrakenApplication\KrakenApp\ResultPage.html"/>
+	</appSettings>
+

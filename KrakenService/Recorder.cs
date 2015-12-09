@@ -260,7 +260,8 @@ namespace KrakenService
             {
                 return null;
             }
-
+            //record last timestamp
+            since = recenttrades.Last;
             //Treatment of the datas and store it in list
             foreach (List<string> ls in recenttrades.Datas)
             {
@@ -286,8 +287,7 @@ namespace KrakenService
             }
 
             //record last filtered data in file
-            RecordLastTradingData();
-            since = recenttrades.Last;
+            RecordLastTradingData();           
             return since;
         }
 
