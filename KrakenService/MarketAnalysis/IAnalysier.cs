@@ -14,22 +14,29 @@ namespace KrakenService.MarketAnalysis
          double PriceToSellProfit { get; set; }
          double PriceToSellStopLoss { get; set; }
          double PriceToBuyProfit { get; set; }
+        
                
+        // Decision on the market
          bool Buy();
 
          bool Sell();
+
+         bool Buying();
+
+         bool Selling();
 
          bool CancelSelling();
 
          bool CancelBuying();
 
+        // Intensity of the decision
          double GetVolumeToBuy();
 
          double GetVolumeToSell();
 
          double GetPriceToBuy();
 
-         double GetPriceToSell();
+         double GetPriceToSell();     
 
     }
 }

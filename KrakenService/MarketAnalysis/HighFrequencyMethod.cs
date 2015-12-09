@@ -23,7 +23,6 @@ namespace KrakenService.MarketAnalysis
                  
             }
         
-        
         public bool Buy()
         {
             double limit = WeightedAverage + WeightedStandardDeviation - MinimalPercentageOfEarning * LastPrice;
@@ -44,6 +43,18 @@ namespace KrakenService.MarketAnalysis
         {
             GetPriceToSell();
             GetVolumeToSell();
+            return true;
+        }
+
+        public bool Buying()
+        {
+            recorder.GetOpenOrders();
+            return true;
+        }
+
+        public bool Selling()
+        {
+            recorder.GetOpenOrders();
             return true;
         }
 
