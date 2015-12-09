@@ -187,6 +187,11 @@ namespace KrakenService
                 Thread.Sleep(30000);
             }
         }
+
+        public void GetExtremeOfAskAndBid()
+        {
+
+        }
         
         #endregion 
 
