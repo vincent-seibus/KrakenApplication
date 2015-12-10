@@ -31,6 +31,8 @@ namespace KrakenService.MarketAnalysis
         public double LastMiddleQuote { get; set; }
         public double LastLowerAsk { get; set; }
         public double LastHigherBid { get; set; }
+        public double LastLowerBid { get; set; }
+        public double LastHigherAsk { get; set; }
         public double StochasticKIndex { get; set; }
         public double StochasticDIndex { get; set; }
         public double RSIIndex { get; set; }
@@ -173,8 +175,17 @@ namespace KrakenService.MarketAnalysis
             try
             {
                 LastLowerAsk = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "ask").OrderBy(a => a.Price).FirstOrDefault().Price);
+                LastHigherAsk = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "ask").OrderByDescending(a => a.Price).FirstOrDefault().Price);
                 LastHigherBid = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "bid").OrderByDescending(a => a.Price).FirstOrDefault().Price);
+                LastLowerBid = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "bid").OrderBy(a => a.Price).FirstOrDefault().Price);
+                double SumVolumeBid = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "bid").Sum(a => a.Volume));
+                double SumVolumeAsk = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "ask").Sum(a => a.Volume));
+                double BidDepth = LastHigherBid - LastLowerBid;
+                double AskDepth = LastHigherAsk - LastLowerAsk;
                 LastMiddleQuote = (LastHigherBid + LastLowerAsk) / 2;
+                double BidDepthPercentage = BidDepth / LastMiddleQuote;
+                double AskDepthPercentage = AskDepth / LastMiddleQuote;
+
                 return LastMiddleQuote;
             }
             catch (Exception ex)

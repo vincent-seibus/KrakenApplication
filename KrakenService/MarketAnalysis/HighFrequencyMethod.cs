@@ -67,7 +67,7 @@ namespace KrakenService.MarketAnalysis
             }
             catch (Exception ex)
             {
-                Console.WriteLine(typeof(BollingerMethod).ToString() + ".Buying : " + ex.Message);
+                Console.WriteLine(typeof(HighFrequencyMethod).ToString() + ".Buying : " + ex.Message);
                 return true;
             }
         }
@@ -98,7 +98,7 @@ namespace KrakenService.MarketAnalysis
             }
              catch (Exception ex)
              {
-                 Console.WriteLine(typeof(BollingerMethod).ToString() + ".Selling : " + ex.Message);
+                 Console.WriteLine(typeof(HighFrequencyMethod).ToString() + ".Selling : " + ex.Message);
                  return true;
              }
         }

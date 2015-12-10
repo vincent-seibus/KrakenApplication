@@ -72,6 +72,7 @@
     <Compile Include="KrakenObjects\SendingRateManager.cs" />
     <Compile Include="KrakenObjects\ServerTime.cs" />
     <Compile Include="KrakenObjects\TradingData.cs" />
+    <Compile Include="MarketAnalysis\OrderBookAnalysisMethod.cs" />
     <Compile Include="NewPlayer.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
