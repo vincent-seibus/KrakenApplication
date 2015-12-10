@@ -173,7 +173,14 @@ namespace KrakenService
                 LastHigherAsk = Convert.ToDouble(ordersBook.Where(a => a.OrderType == "ask").OrderByDescending(a => a.Price).FirstOrDefault().Price);
                 LastHigherBid = Convert.ToDouble(ordersBook.Where(a => a.OrderType == "bid").OrderByDescending(a => a.Price).FirstOrDefault().Price);
                 LastLowerBid = Convert.ToDouble(ordersBook.Where(a => a.OrderType == "bid").OrderBy(a => a.Price).FirstOrDefault().Price);
+                double SumVolumeBid = Convert.ToDouble(ordersBook.Where(a => a.OrderType == "bid").Sum(a => a.Volume));
+                double SumVolumeAsk = Convert.ToDouble(ordersBook.Where(a => a.OrderType == "ask").Sum(a => a.Volume));
+                double BidDepth = LastHigherBid - LastLowerBid;
+                double AskDepth = LastHigherAsk - LastLowerAsk;
                 LastMiddleQuote = (LastHigherBid + LastLowerAsk) / 2;
+                double BidDepthPercentage = BidDepth / LastMiddleQuote;
+                double AskDepthPercentage = AskDepth / LastMiddleQuote;
+
                 return LastMiddleQuote;
             }
             catch(Exception ex)
