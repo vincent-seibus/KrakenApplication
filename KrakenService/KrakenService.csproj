@@ -57,6 +57,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="KrakenObjects\OrderBookAnalysedData.cs" />
     <Compile Include="MarketAnalysis\AbstractAnalysier.cs" />
     <Compile Include="Analysier.cs" />
     <Compile Include="MarketAnalysis\BollingerMethod.cs" />

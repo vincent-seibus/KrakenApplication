@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -196,5 +197,26 @@ namespace KrakenService.MarketAnalysis
 
         #endregion 
                 
+        #region helpers
+
+        public string CheckFileAndDirectoryOrderBookAnalysis()
+        {
+            string pathDirectory = Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).ToString(), "OrderBookDataAnalysed" + Pair);
+            if (!Directory.Exists(pathDirectory))
+                Directory.CreateDirectory(pathDirectory);
+
+            string pathFile = Path.Combine(pathDirectory, "OrderBookDataAnalysed_" + DateTime.Now.Year + DateTime.Now.Month + DateTime.Now.Day);
+            if (!File.Exists(pathFile))
+            {
+                using (var myFile = File.Create(pathFile))
+                {
+                    // interact with myFile here, it will be disposed automatically
+                }
+            }
+
+            return pathFile;
+        }
+
+        #endregion 
     }
 }
