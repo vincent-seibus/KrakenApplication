@@ -6,38 +6,33 @@ using System.Threading.Tasks;
 
 namespace KrakenService.MarketAnalysis
 {
-    public class HighFrequencyMethod : AbstractAnalysier, IAnalysier
+    public class BollingerMethod : AbstractAnalysier, IAnalysier
     {
-        
         public double VolumeToBuy { get; set; }
         public double VolumeToSell { get; set; }
         public double PriceToSellProfit { get; set; }
         public double PriceToSellStopLoss { get; set; }
         public double PriceToBuyProfit { get; set; }
         public double PriceToBuyStopLoss { get; set; }
-            
-        public HighFrequencyMethod(string Pair, Recorder rec, double PercentageOfFund)
+
+        public BollingerMethod(string Pair, Recorder rec, double PercentageOfFund)
             : base(Pair, rec, PercentageOfFund)
             {
                  
                  
             }
-        
+
+
         public bool Buy()
         {
-            //Make sure that the last price is not too high compared to the average price
-            double limit = WeightedAverage + 2 * WeightedStandardDeviation - LastPrice * MinimalPercentageOfEarning;
-
-            if (LastPrice < limit)
+            if (WeightedStandardDeviation < (WeightedAverage * MinimalPercentageOfEarning))
             {
                 GetPriceToBuy();
                 GetVolumeToBuy();
                 return true;
             }
-            else
-            {
-                return false;
-            }
+
+            return false;
         }
 
         public bool Sell()
@@ -65,7 +60,7 @@ namespace KrakenService.MarketAnalysis
                 else
                     return false;
             }
-            catch (Exception ex)
+            catch(Exception ex)
             {
                 Console.WriteLine(typeof(BollingerMethod).ToString() + ".Buying : " + ex.Message);
                 return true;
@@ -86,6 +81,7 @@ namespace KrakenService.MarketAnalysis
                 
             }
             /*/
+
             try
             {
                 recorder.GetOpenOrders();
@@ -96,16 +92,16 @@ namespace KrakenService.MarketAnalysis
                 else
                     return false;
             }
-             catch (Exception ex)
-             {
-                 Console.WriteLine(typeof(BollingerMethod).ToString() + ".Selling : " + ex.Message);
-                 return true;
-             }
+            catch (Exception ex)
+            {
+                Console.WriteLine(typeof(BollingerMethod).ToString() + ".Selling : " + ex.Message);
+                return true;
+            }
         }
 
         public bool CancelSelling()
         {
-            double limit = WeightedAverage - WeightedStandardDeviation - MinimalPercentageOfEarning * LastPrice;
+            double limit = WeightedAverage - 2 * WeightedStandardDeviation;
 
             if (LastPrice < limit)
             {
@@ -117,7 +113,7 @@ namespace KrakenService.MarketAnalysis
 
         public bool CancelBuying()
         {
-            double limit = WeightedAverage + WeightedStandardDeviation + MinimalPercentageOfEarning * LastPrice;
+            double limit = WeightedAverage + 2 * WeightedStandardDeviation;
 
             if (LastPrice > limit)
             {
@@ -129,7 +125,7 @@ namespace KrakenService.MarketAnalysis
 
         public void CancelledSelling()
         {
-               
+
         }
 
         public void CancelledBuying()
@@ -189,7 +185,7 @@ namespace KrakenService.MarketAnalysis
                 VolumeToSell = CurrentBalance.TotalBTC * (double)PercentageOfFund;
 
                 // Check if not superior to the curreny balance of euro
-                if (VolumeToSell  > CurrentBalance.BTC)
+                if (VolumeToSell > CurrentBalance.BTC)
                 {
                     // return current euro balance if yes
                     VolumeToBuy = CurrentBalance.BTC;
@@ -205,7 +201,7 @@ namespace KrakenService.MarketAnalysis
 
         public double GetPriceToBuy()
         {
-            PriceToBuyProfit = LastPrice - (MinimalPercentageOfEarning * LastPrice / 2);
+            PriceToBuyProfit = WeightedAverage - WeightedStandardDeviation;
             PriceToBuyStopLoss = 0;
 
             return PriceToBuyProfit;
@@ -213,10 +209,11 @@ namespace KrakenService.MarketAnalysis
 
         public double GetPriceToSell()
         {
-            PriceToSellProfit = (MinimalPercentageOfEarning * LastPrice) + LastPrice;
+            PriceToSellProfit = WeightedAverage + WeightedStandardDeviation;
             PriceToSellStopLoss = 0;
 
             return PriceToSellProfit;
         }
+
     }
 }

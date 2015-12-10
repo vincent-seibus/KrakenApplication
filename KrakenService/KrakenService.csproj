@@ -59,6 +59,7 @@
   <ItemGroup>
     <Compile Include="MarketAnalysis\AbstractAnalysier.cs" />
     <Compile Include="Analysier.cs" />
+    <Compile Include="MarketAnalysis\BollingerMethod.cs" />
     <Compile Include="MarketAnalysis\HighFrequencyMethod.cs" />
     <Compile Include="MarketAnalysis\IAnalysier.cs" />
     <Compile Include="KrakenObjects\Balance.cs" />
