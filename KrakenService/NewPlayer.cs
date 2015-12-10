@@ -1,5 +1,6 @@
 ﻿using KrakenClient;
 using KrakenService.KrakenObjects;
+using KrakenService.MarketAnalysis;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -8,127 +9,112 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace KrakenService
 {
-    public class Player
+    public class NewPlayer
     {
-        public Analysier analysier { get; set; }
-        public KrakenClient.KrakenClient client {get; set;}
-        public string Pair { get; set; }
-        public List<CurrentOrder> MyOpenedOrders { get; set; }
+        public IAnalysier analysier { get; set; }
+        public KrakenClient.KrakenClient client { get; set; }
+        public string Pair { get; set; }     
 
         // Context property
         public PlayerState playerState { get; set; }
-        public KrakenOrder CurrentOrder { get; set; }
-        private NumberFormatInfo NumberProvider { get; set; }
+        public KrakenOrder CurrentOrder { get; set; }       
         public SendingRateManager SRM { get; set; }
-        
-        public Player(Analysier i_analysier, string i_pair, SendingRateManager srm)
+
+        // Config property
+        private NumberFormatInfo NumberProvider { get; set; }
+
+        public NewPlayer(IAnalysier i_analysier, string i_pair, SendingRateManager srm)
         {
             NumberProvider = new NumberFormatInfo();
-            NumberProvider.CurrencyDecimalSeparator = ".";
+            NumberProvider.CurrencyDecimalSeparator = ConfigurationManager.AppSettings["CurrencyDecimalSeparator"];
             SRM = srm;
 
             analysier = i_analysier;
             client = new KrakenClient.KrakenClient();
-            MyOpenedOrders = analysier.MyOpenedOrders;
             playerState = RetrieveContext();
-
         }
 
-        public string  SellAtLimit()
+        public bool SellAtLimit()
         {
-            playerState = analysier.HighFrequencyMethod("sell");
-
-            //Checking if the context is correct
-            if(!playerState.HasFlag(PlayerState.ToSell))
+            if (!analysier.Sell())
             {
-                return null;
+                return false;
             }
 
             //SendingRateCheck
             SRM.RateAddition(1);
 
-            //  change this method if it is different
-            //analysier.BollingerMethod("sell");
-                       
             // create the order
             KrakenOrder order = new KrakenOrder();
             order.Pair = "XBTEUR";
             order.Type = "sell";
             order.OrderType = "limit";
             order.Price = Math.Round(Convert.ToDecimal(analysier.PriceToSellProfit, NumberProvider), 3);
-            order.Volume = Convert.ToDecimal(analysier.VolumeToSell,NumberProvider);
+            order.Volume = Convert.ToDecimal(analysier.VolumeToSell, NumberProvider);
 
             Console.WriteLine("Sell !!! price:" + order.Price + " ; volume:" + order.Volume);
             string response = client.AddOrder(order).ToString();
 
             //Get order id from response
             // Check response if no error and change status, don't change status otherwise
-            if(GetOrderIdFromResponse(response) != null)
+            if (GetOrderIdFromResponse(response) != null)
             {
-                playerState = PlayerState.Selling;
-                analysier.recorder.GetOpenOrders();
+                return true;
             }
-            
-            return response;
-        }
-        
-        public string BuyAtLimit()
-        {
-            playerState = analysier.HighFrequencyMethod("buy"); 
 
-            //Checking if the context is correct
-            if (!playerState.HasFlag(PlayerState.ToBuy))
+            return false;
+        }
+
+        public bool BuyAtLimit()
+        {           
+
+            if(!analysier.Buy())
             {
-                return null;
+                return false;
             }
 
             //SendingRateCheck
             SRM.RateAddition(1);
-
-            //  change this method if it is different
-            //analysier.BollingerMethod("buy");
 
             // create the order
             KrakenOrder order = new KrakenOrder();
             order.Pair = "XBTEUR";
             order.Type = "buy";
             order.OrderType = "limit";
-            order.Price = Math.Round(Convert.ToDecimal(analysier.PriceToBuyProfit,NumberProvider),3);
-            order.Volume = Convert.ToDecimal(analysier.VolumeToBuy,NumberProvider);
+            order.Price = Math.Round(Convert.ToDecimal(analysier.PriceToBuyProfit, NumberProvider), 3);
+            order.Volume = Convert.ToDecimal(analysier.VolumeToBuy, NumberProvider);
 
             // Send request to buy
             Console.WriteLine("Buy !!! price:" + order.Price + " ; volume:" + order.Volume);
             //Console.ReadKey();
             string response = client.AddOrder(order).ToString();
-          
+
 
             //Get order id from response
             // Check response if no error and change status, don't change status otherwise
             if (GetOrderIdFromResponse(response) != null)
-            {
-                playerState = PlayerState.Buying;
-                analysier.recorder.GetOpenOrders();
+            {            
+                    return true;                           
             }
 
-            return response;
+            return false;
         }
 
         public void Buying()
         {
-            if (!analysier.OpenedOrdersExist())
+            if (!analysier.Buying())
             {
                 playerState = PlayerState.Bought;
+                analysier.MyOpenedOrders.Clear();
                 Console.WriteLine("Bought !!");
-                analysier.recorder.RecordBalance();
                 return;
             }
 
-            if (analysier.CancelOpenedOrder())
+            if (analysier.CancelBuying())
             {
                 playerState = PlayerState.ToCancel;
                 return;
@@ -138,15 +124,15 @@ namespace KrakenService
         public void Selling()
         {
             // If buying check if the order has passed
-            if (!analysier.OpenedOrdersExist())
+            if (!analysier.Selling())
             {
                 playerState = PlayerState.Sold;
+                analysier.MyOpenedOrders.Clear();
                 Console.WriteLine("Sold !!");
-                analysier.recorder.RecordBalance();
                 return;
             }
 
-            if (analysier.CancelOpenedOrder())
+            if (analysier.CancelSelling())
             {
                 playerState = PlayerState.ToCancel;
                 return;
@@ -158,9 +144,27 @@ namespace KrakenService
         {
             switch (playerState)
             {
+                // TO BUY ---------------------------
+                case PlayerState.ToBuy:
+                    if (BuyAtLimit())
+                        playerState = PlayerState.Buying;
+                    break;
+
                 // BUYING ---------------------------
-                case PlayerState.Buying:
+                case PlayerState.Buying:                  
                     Buying();
+                    break;
+
+                // BOUGHT -----------------------------
+                case PlayerState.Bought:
+                    if (analysier.Sell())
+                        playerState = PlayerState.ToSell;
+                    break;
+
+                // TO SELL --------------------------
+                case PlayerState.ToSell:
+                    if (SellAtLimit())
+                        playerState = PlayerState.Selling;
                     break;
 
                 // SELLING --------------------------
@@ -168,74 +172,44 @@ namespace KrakenService
                     Selling();
                     break;
 
-                // TO BUY ---------------------------
-                case PlayerState.ToBuy:
-                    BuyAtLimit();
-                    break;
-
-                // TO SELL --------------------------
-                case PlayerState.ToSell:
-                    SellAtLimit();
-                    break;
-
                 // SOLD -----------------------------
                 case PlayerState.Sold:
-                    playerState = PlayerState.Pending;
-                    break;
-
-                // BOUGHT -----------------------------
-                case PlayerState.Bought:
-                    playerState = PlayerState.ToSell;
-                    break;
-
-                // TO CANCEL
-                case PlayerState.ToCancel:
-                        Cancel(analysier.MyOpenedOrders.First().OrderID);
-                        break;
-
-                //CANCELLED
-                case PlayerState.Cancelled:
-                        playerState = PlayerState.Pending;
-                        break;
-
-                // PENDING ----------------------------
-                case PlayerState.Pending:
-                    // Check if the analysier is ok to buy or sell with the current market data
-                    if(analysier.OpenedOrdersExist())
-                    {
-                        if (MyOpenedOrders.First().Type == "sell")
-                            playerState = PlayerState.Selling;
-                        if (MyOpenedOrders.First().Type == "buy")
-                            playerState = PlayerState.Buying;
-                        break;
-                    }
-                    // To sell if the bitcoin balance is higher that the euro balance
-                    analysier.GetVolumeToBuy();
-                    analysier.GetVolumeToSell();
-                    if (analysier.VolumeToSell > analysier.VolumeToBuy)
-                    {
-                        playerState = PlayerState.ToSell;
-                        break;
-                    }
-                    // Check if it worth to buy
-                    /*/if(!analysier.SellorBuy())
-                    {
-                        Console.WriteLine("DON'T BUY - Margin too low !!");
-                        break;
-                    }
-                    //*/
-
+                    if(analysier.Buy())
                     playerState = PlayerState.ToBuy;
                     break;
+
+
+                // CANCEL SELLING -----------------------------
+                case PlayerState.ToCancelSelling:                   
+                    Cancel(analysier.MyOpenedOrders.First().OrderID);
+                    break;
+
+                // CANCEL BUYING -----------------------------
+                case PlayerState.ToCancelBuying:
+                    Cancel(analysier.MyOpenedOrders.First().OrderID);
+                    break;
+
+                //CANCELLED BUYING -----------------------------
+                case PlayerState.CancelledBuying:
+                    if (analysier.Buy())
+                        playerState = PlayerState.ToBuy;
+                    break;
+
+                //CANCELLED SELLING -----------------------------
+                case PlayerState.CancelledSelling:
+                    if (analysier.Sell())
+                        playerState = PlayerState.ToSell;
+                    break;
+
             }
 
             SaveContext();
-           
+
         }
 
         public void Cancel(string OrderId)
         {
-            if(!playerState.HasFlag(PlayerState.ToCancel))
+            if (!playerState.HasFlag(PlayerState.ToCancelBuying) && !playerState.HasFlag(PlayerState.ToCancelSelling))
             {
                 return;
             }
@@ -246,9 +220,13 @@ namespace KrakenService
 
             try
             {
-                if(resp["error"] == null || resp["error"].ToString() == "[]")
+                if (resp["error"] == null || resp["error"].ToString() == "[]")
                 {
-                    playerState = PlayerState.Cancelled;
+                    if (playerState.HasFlag(PlayerState.ToCancelBuying))
+                        playerState = PlayerState.CancelledBuying;
+                    if (playerState.HasFlag(PlayerState.ToCancelSelling))
+                        playerState = PlayerState.CancelledSelling;
+
                     analysier.MyOpenedOrders.Clear();
                     Console.WriteLine("Order Cancelled");
                 }
@@ -258,7 +236,7 @@ namespace KrakenService
                 }
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.Message + "; response:" + resp);
             }
@@ -267,6 +245,23 @@ namespace KrakenService
 
         #region helpers
 
+        public string GetOrderIdFromResponse(string response)
+        {
+            JObject resp = JObject.Parse(response);
+            try
+            {
+                JArray array = (JArray)resp["result"]["txid"];
+                // need to retrieve the price as well
+                analysier.MyOpenedOrders.Add(new OpenedOrder() { OrderID = array[0].ToString() });
+                return array.ToString();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(resp);
+                return null;
+            }
+        }
+
         private void SaveContext()
         {
             try
@@ -274,6 +269,10 @@ namespace KrakenService
                 string pathfile = CheckFileAndDirectoryContext();
                 dynamic Context = new JObject();
                 Context.PlayerState = Enum.GetName(typeof(PlayerState), playerState);
+                if (analysier.MyOpenedOrders.Count != 0)
+                    Context.OrderID = analysier.MyOpenedOrders.FirstOrDefault().OrderID;
+                else
+                    Context.OrderID = "";
                 File.WriteAllText(pathfile, Context.ToString());
             }
             catch (Exception ex)
@@ -290,6 +289,10 @@ namespace KrakenService
                 string json = File.ReadAllText(pathfile);
                 JObject Context = JObject.Parse(json);
                 playerState = (PlayerState)Enum.Parse(typeof(PlayerState), Context["PlayerState"].ToString());
+
+                if (!string.IsNullOrEmpty( Context["OrderID"].ToString()))
+                analysier.MyOpenedOrders.Add( new OpenedOrder() { OrderID = Context["OrderID"].ToString() });
+
                 return playerState;
             }
             catch (Exception ex)
@@ -301,7 +304,7 @@ namespace KrakenService
 
         private string CheckFileAndDirectoryContext()
         {
-            string pathDirectory = Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).ToString(), "ContextData" + Pair + analysier.GetType().ToString());
+            string pathDirectory = Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).ToString(), "ContextData" + Pair );
             if (!Directory.Exists(pathDirectory))
                 Directory.CreateDirectory(pathDirectory);
 
@@ -316,42 +319,11 @@ namespace KrakenService
 
             return pathFile;
         }
+        
 
-        public string GetOrderIdFromResponse(string response)
-        {
-            JObject resp = JObject.Parse(response);
-            try
-            {                
-                JArray array = (JArray)resp["result"]["txid"];
-                //Orders = array.ToObject<List<string>>();
-                return array.ToString();
-            }
-            catch(Exception ex)
-            {
-                Console.WriteLine(resp);
-                return null;
-            }
-        }
-
-        #endregion 
+        #endregion
 
     }
 
-    public enum PlayerState
-    {
-        ToBuy = 0,
-        Buying =1,
-        Bought = 2,
-        ToSell = 3,
-        Selling = 4,
-        Sold = 5,
-        ToCancel = 6,        
-        Cancelling = 7,
-        Cancelled = 8,
-        ToCancelSelling = 9,
-        ToCancelBuying = 10,
-        CancelledSelling = 11,
-        CancelledBuying = 12,
-        Pending = 100,        
-    }
+  
 }

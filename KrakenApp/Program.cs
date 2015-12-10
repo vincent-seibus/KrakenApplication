@@ -16,6 +16,7 @@ using System.Threading;
 using System.Globalization;
 using HtmlAgilityPack;
 using System.Configuration;
+using KrakenService.MarketAnalysis;
 
 
 namespace KrakenApp
@@ -36,10 +37,11 @@ namespace KrakenApp
              //Console.ReadKey();
 
              KrakenService.Recorder rec1 = new KrakenService.Recorder(pair,SRM);
-             KrakenService.Analysier ana1 = new KrakenService.Analysier(rec1);
-             KrakenService.Player play1 = new Player(ana1, rec1.Pair,SRM);
-            
-
+             //KrakenService.Analysier ana1 = new KrakenService.Analysier(rec1);
+             //KrakenService.Player play1 = new Player(ana1, rec1.Pair,SRM);
+             HighFrequencyMethod ana1 = new HighFrequencyMethod(pair,rec1,0.3);
+             NewPlayer play1 = new NewPlayer(ana1, pair, SRM);
+                 
             int i = 0;
             while(i < 40)
             {
@@ -54,12 +56,11 @@ namespace KrakenApp
                 Thread.Sleep(1000);
                 Console.WriteLine("--------------------------------------");
                 Console.WriteLine("Last Middle Quote:" + ana1.LastMiddleQuote);
-                Console.WriteLine("Last Trade price:" + ana1.LastPrice);
-                Console.WriteLine("Opened order exist : " + ana1.OpenedOrdersExist());
+                Console.WriteLine("Last Trade price:" + ana1.LastPrice);                
                 Console.WriteLine("Average : " + ana1.WeightedAverage);
                 Console.WriteLine("Ecart Type : " + ana1.WeightedStandardDeviation);
                 Console.WriteLine("BTC : " + rec1.CurrentBalance.BTC + "; EURO : " + rec1.CurrentBalance.EUR);
-                Console.WriteLine("Sell or buy :" + ana1.SellorBuy().ToString() + " ; Potential Earning: " + ana1.PotentialPercentageOfEarning + " ; minimal earning required: " + ana1.MinimalPercentageOfEarning);
+                Console.WriteLine("Player state :" + play1.playerState + " ; minimal earning required: " + ana1.MinimalPercentageOfEarning);
                 i++;
             }
             Console.WriteLine("--------------------------------------");
@@ -79,12 +80,12 @@ namespace KrakenApp
                 Console.WriteLine("Player Status :" + play1.playerState);
                 Console.WriteLine("Last Middle Quote:" + ana1.LastMiddleQuote);
                 Console.WriteLine("Last Trade price:" + ana1.LastPrice);
-                Console.WriteLine("Opened order exist : " + ana1.OpenedOrdersExist());
+                Console.WriteLine("Opened order exist : " + rec1.OpenedOrders.Select(a => a.OrderID).ToString());
                 Console.WriteLine("Average : " + ana1.WeightedAverage);
                 Console.WriteLine("Ecart Type : " + ana1.WeightedStandardDeviation);
                 Console.WriteLine("BTC : " + rec1.CurrentBalance.BTC + "; EURO : " + rec1.CurrentBalance.EUR);
-                Console.WriteLine("Sell or buy :" + ana1.SellorBuy().ToString() + " ; Potential Earning: " + ana1.PotentialPercentageOfEarning + " ; minimal earning required: " + ana1.MinimalPercentageOfEarning);
-                Thread.Sleep(1000);
+                Console.WriteLine("minimal earning required: " + ana1.MinimalPercentageOfEarning);
+                Thread.Sleep(2000);
             }       
            
         }

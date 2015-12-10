@@ -41,18 +41,22 @@ namespace KrakenService.MarketAnalysis
         private double Multiplicateur { get; set; }
         public double MinimalPercentageOfEarning { get; set; } // it is in percent 
      
-        public AbstractAnalysier(string Pair, Recorder rec, double percentageoffund)
+        public AbstractAnalysier(string i_Pair, Recorder rec, double percentageoffund)
         {
             NumberProvider = new NumberFormatInfo();
             NumberProvider.CurrencyDecimalSeparator = ".";
 
             double Fee = Convert.ToDouble(ConfigurationManager.AppSettings["FeeInPercentage"], NumberProvider);
             double MarginOnFee = Convert.ToDouble(ConfigurationManager.AppSettings["MarginOnFeeInPercentage"], NumberProvider);
-            Multiplicateur = Convert.ToDouble(ConfigurationManager.AppSettings["StandardDeviationMultplicateurStopLoss"]);
             MinimalPercentageOfEarning = (Fee + MarginOnFee) / 100;
-            recorder = rec;
+            Multiplicateur = Convert.ToDouble(ConfigurationManager.AppSettings["StandardDeviationMultplicateurStopLoss"]);
             PercentageOfFund = percentageoffund;
-            Pair = rec.Pair;
+            Pair = i_Pair;                      
+            recorder = rec;
+
+            MyOpenedOrders = new List<OpenedOrder>();           
+            CurrentBalance = rec.CurrentBalance;           
+
             Task.Run(() => GetPropertyToWork()); // Looped every second
             Task.Run(() => GetCurrentTotalBalance());
         }
@@ -180,6 +184,6 @@ namespace KrakenService.MarketAnalysis
         }
 
         #endregion 
-
+                
     }
 }
