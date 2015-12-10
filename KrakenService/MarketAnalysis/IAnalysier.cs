@@ -14,8 +14,8 @@ namespace KrakenService.MarketAnalysis
          double PriceToSellProfit { get; set; }
          double PriceToSellStopLoss { get; set; }
          double PriceToBuyProfit { get; set; }
-        
-               
+         List<OpenedOrder> MyOpenedOrders { get; set; }
+                       
         // Decision on the market
          bool Buy();
 
@@ -28,6 +28,10 @@ namespace KrakenService.MarketAnalysis
          bool CancelSelling();
 
          bool CancelBuying();
+
+         void CancelledSelling();
+
+         void CancelledBuying();
 
         // Intensity of the decision
          double GetVolumeToBuy();

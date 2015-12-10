@@ -25,7 +25,8 @@ namespace KrakenService.MarketAnalysis
         
         public bool Buy()
         {
-            double limit = WeightedAverage + WeightedStandardDeviation - MinimalPercentageOfEarning * LastPrice;
+            //Make sure that the last price is not too high compared to the average price
+            double limit = WeightedAverage + 2 * WeightedStandardDeviation - LastPrice * MinimalPercentageOfEarning;
 
             if (LastPrice < limit)
             {
@@ -41,21 +42,51 @@ namespace KrakenService.MarketAnalysis
 
         public bool Sell()
         {
+            // Why you should sell 
+
+            // Because you have BTC 
+
+            // Because the BTC is higher than the average
+
             GetPriceToSell();
             GetVolumeToSell();
             return true;
         }
 
         public bool Buying()
-        {
+        {            
+
             recorder.GetOpenOrders();
-            return true;
+            var OpenedOrders = recorder.OpenedOrders.Select(a => a.OrderID);
+
+            if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
+                return true;
+            else
+                return false;
         }
 
         public bool Selling()
         {
+            /*/
+            if(MyOpenedOrders.Count == 0)
+            {
+                return false;
+            }
+                       
+
+            if(MyOpenedOrders.First() != null && MyOpenedOrders.First().Price < LastPrice )
+            {
+                
+            }
+            /*/
+
             recorder.GetOpenOrders();
-            return true;
+            var OpenedOrders = recorder.OpenedOrders.Select(a => a.OrderID);
+
+            if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
+                return true;
+            else
+                return false;
         }
 
         public bool CancelSelling()
@@ -82,10 +113,21 @@ namespace KrakenService.MarketAnalysis
             return false;
         }
 
+        public void CancelledSelling()
+        {
+               
+        }
+
+        public void CancelledBuying()
+        {
+
+        }
+
         public double GetVolumeToBuy()
         {
             // record balance and price
             recorder.RecordBalance();
+            CurrentBalance = recorder.CurrentBalance;
 
             // Get total balance adjusted by price to buy
             CurrentBalance.TotalBTC = CurrentBalance.BTC + (CurrentBalance.EUR / PriceToBuyProfit);
@@ -118,6 +160,7 @@ namespace KrakenService.MarketAnalysis
         {
             // record balance and price
             recorder.RecordBalance();
+            CurrentBalance = recorder.CurrentBalance;
 
             // Get total balance adjusted by price to buy
             CurrentBalance.TotalBTC = CurrentBalance.BTC + (CurrentBalance.EUR / PriceToSellProfit);
