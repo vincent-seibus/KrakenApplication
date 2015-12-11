@@ -92,6 +92,7 @@ namespace KrakenService.MarketAnalysis
         {
             while (true)
             {
+                CurrentBalance = recorder.CurrentBalance;
                 CurrentBalance.TotalBTC = CurrentBalance.BTC + (CurrentBalance.EUR / LastPrice);
                 CurrentBalance.TotalEUR = CurrentBalance.EUR + (CurrentBalance.BTC * LastPrice);
                 Thread.Sleep(10000);

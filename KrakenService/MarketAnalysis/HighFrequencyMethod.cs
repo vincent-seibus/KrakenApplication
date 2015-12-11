@@ -57,7 +57,9 @@ namespace KrakenService.MarketAnalysis
         {
             try
             {
-                recorder.GetOpenOrders();
+                if (!recorder.GetOpenOrders())
+                    return true;
+
                 var OpenedOrders = recorder.OpenedOrders.Select(a => a.OrderID);
 
                 if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
@@ -88,7 +90,9 @@ namespace KrakenService.MarketAnalysis
             /*/
             try
             {
-                recorder.GetOpenOrders();
+                if (!recorder.GetOpenOrders())
+                    return true;
+
                 var OpenedOrders = recorder.OpenedOrders.Select(a => a.OrderID);
 
                 if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())

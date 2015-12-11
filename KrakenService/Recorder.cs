@@ -459,7 +459,7 @@ namespace KrakenService
             
         }
 
-        public string GetOpenOrders()
+        public bool GetOpenOrders()
         {
            
             //Sleep to avoid temporary lock out caused by GetOpenOrder() method call
@@ -491,14 +491,15 @@ namespace KrakenService
                             OpenedOrders.Add(openedorder);
                     }
 
-                    return txid;
+                    return true;
                 }
-                return null;
+                return true;
             }
             catch (Exception ex)
             {
                 Console.WriteLine("Get Opened Order Error: " + obj["error"]);
-                return null;
+                // cannot terminate the statement without succeding as it is critical for the whol process                  
+                return false;
             }
         }
 
