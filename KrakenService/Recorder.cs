@@ -298,6 +298,14 @@ namespace KrakenService
             OHLCData lastdata = GetLastLineOHLCDataRecorded(period);
             if( lastdata != null && since == null)
             {
+                String last = Convert.ToString(lastdata.time, NumberProvider);
+                String lastgood = last.Replace(".", "");
+                while (lastgood.Length < 19)
+                {
+                    lastgood += "0";
+                }
+
+                since = Convert.ToInt64(lastgood, NumberProvider);
                 since = (long)lastdata.time;
             }
            
@@ -514,10 +522,22 @@ namespace KrakenService
             using (StreamReader reader = File.OpenText(CheckFileAndDirectoryOHLCData(period)))
             {
                 var csv = new CsvReader(reader);
-                var records = csv.GetRecords<OHLCData>();
+                var list = new List<OHLCData>();
                 try
-                {
-                    OHLCLastData = records.OrderByDescending(a => a.time).FirstOrDefault();
+                {                    
+                    while (csv.Read())
+                    {
+                        try
+                        {
+                            var record = csv.GetRecord<OHLCData>();
+                            list.Add(record);
+                        }
+                        catch (Exception)
+                        {
+
+                        }
+                    }
+                    OHLCLastData = list.OrderByDescending(a => a.time).FirstOrDefault();
                 }
                 catch (Exception)
                 {
