@@ -150,7 +150,7 @@ namespace KrakenService.MarketAnalysis
             //Calculate volume to buy
 
             //Check if percentage not null
-            if (PercentageOfFund != null)
+            if (PercentageOfFund != null && PercentageOfFund != 0)
             {
                 // calculate the percentage of the total balance to invest
                 VolumeToBuy = CurrentBalance.TotalBTC * (double)PercentageOfFund;
@@ -183,7 +183,7 @@ namespace KrakenService.MarketAnalysis
             //Calculate volume to sell
 
             //Check if percentage not null
-            if (PercentageOfFund != null)
+            if (PercentageOfFund != null && PercentageOfFund != 0 )
             {
                 // calculate the percentage of the total balance to invest
                 VolumeToSell = CurrentBalance.TotalBTC * (double)PercentageOfFund;
@@ -205,7 +205,7 @@ namespace KrakenService.MarketAnalysis
 
         public double GetPriceToBuy()
         {
-            PriceToBuyProfit = LastPrice - (MinimalPercentageOfEarning * LastPrice / 2);
+            PriceToBuyProfit = LastPrice - (MinimalPercentageOfEarning * LastPrice );
             PriceToBuyStopLoss = 0;
 
             return PriceToBuyProfit;

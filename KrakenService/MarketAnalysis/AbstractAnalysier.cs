@@ -1,4 +1,5 @@
-﻿using KrakenService.KrakenObjects;
+﻿using CsvHelper;
+using KrakenService.KrakenObjects;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -186,6 +187,20 @@ namespace KrakenService.MarketAnalysis
                 LastMiddleQuote = (LastHigherBid + LastLowerAsk) / 2;
                 double BidDepthPercentage = BidDepth / LastMiddleQuote;
                 double AskDepthPercentage = AskDepth / LastMiddleQuote;
+
+                string filepath = CheckFileAndDirectoryOrderBookAnalysis();
+                List<OrderBookAnalysedData> list = new List<OrderBookAnalysedData>();
+                list.Add(new OrderBookAnalysedData() 
+                { LowerAsk = LastLowerAsk, LowerBid = LastLowerBid, HigherAsk = LastHigherAsk, HigherBid = LastHigherBid, AskDepth = AskDepth, AskVolume = SumVolumeAsk, BidDepth = BidDepth, BidVolume = SumVolumeBid, DepthRatio = BidDepth / AskDepth, VolumeRatio = SumVolumeBid / SumVolumeAsk });
+                using (StreamWriter writer = File.AppendText(filepath))
+                {
+                    var csv = new CsvWriter(writer);
+                    foreach (var item in list)
+                    {
+                        csv.WriteRecord(item);
+                    }
+                    
+                }
 
                 return LastMiddleQuote;
             }

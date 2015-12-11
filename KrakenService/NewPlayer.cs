@@ -116,7 +116,7 @@ namespace KrakenService
 
             if (analysier.CancelBuying())
             {
-                playerState = PlayerState.ToCancel;
+                playerState = PlayerState.ToCancelBuying;
                 return;
             }
         }
@@ -134,7 +134,7 @@ namespace KrakenService
 
             if (analysier.CancelSelling())
             {
-                playerState = PlayerState.ToCancel;
+                playerState = PlayerState.ToCancelSelling;
                 return;
             }
 
