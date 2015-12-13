@@ -39,9 +39,10 @@ namespace KrakenApp
              KrakenService.Recorder rec1 = new KrakenService.Recorder(pair,SRM);
              //KrakenService.Analysier ana1 = new KrakenService.Analysier(rec1);
              //KrakenService.Player play1 = new Player(ana1, rec1.Pair,SRM);
-             HighFrequencyMethod ana1 = new HighFrequencyMethod(pair,rec1,0.3);
+             HighFrequencyMethod ana1 = new HighFrequencyMethod(pair,rec1,0.6);
              NewPlayer play1 = new NewPlayer(ana1, pair, SRM);
-                 
+             ana1.intialize(); 
+
             int i = 0;
             while(i < 40)
             {
@@ -80,7 +81,7 @@ namespace KrakenApp
                 Console.WriteLine("Player Status :" + play1.playerState);
                 Console.WriteLine("Last Middle Quote:" + ana1.LastMiddleQuote);
                 Console.WriteLine("Last Trade price:" + ana1.LastPrice);
-                Console.WriteLine("Opened order exist : " + rec1.OpenedOrders.Select(a => a.OrderID).ToString());
+                Console.WriteLine("Opened Order:");
                 Console.WriteLine("Average : " + ana1.WeightedAverage);
                 Console.WriteLine("Ecart Type : " + ana1.WeightedStandardDeviation);
                 Console.WriteLine("BTC : " + rec1.CurrentBalance.BTC + "; EURO : " + rec1.CurrentBalance.EUR);

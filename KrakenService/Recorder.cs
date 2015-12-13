@@ -262,6 +262,7 @@ namespace KrakenService
             }
             //record last timestamp
             since = recenttrades.Last;
+            List<TradingData> listtemp = new List<TradingData>();
             //Treatment of the datas and store it in list
             foreach (List<string> ls in recenttrades.Datas)
             {
@@ -274,16 +275,21 @@ namespace KrakenService
                     i++;
                 }
 
-                ListOftradingDatas.Add(td);
+                listtemp.Add(td);
             }
 
-            // Filtered also the ListOftradingDatas to get only 86400;
+            // add new records from API and Filtered also the ListOftradingDatas to get only 86400;
+            ListOftradingDatas.AddRange(listtemp);
             Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
             ListOftradingDatas = ListOftradingDatas.Where(a => a.UnixTime > (unixTimestamp - IntervalInSecond)).ToList();
+
             using (StreamWriter writer = File.AppendText(filePath))
             {
                 var csv = new CsvWriter(writer);
-                csv.WriteRecords(ListOftradingDatas);
+                foreach (var item in listtemp)
+                {
+                    csv.WriteRecord(item);
+                }
             }
 
             //record last filtered data in file
@@ -295,6 +301,7 @@ namespace KrakenService
         {
             string filePath = this.CheckFileAndDirectoryOHLCData(period);
 
+            // Check last data registered
             OHLCData lastdata = GetLastLineOHLCDataRecorded(period);
             if( lastdata != null && since == null)
             {
@@ -312,6 +319,8 @@ namespace KrakenService
             // Sending rate increase the meter and check if can continue ootherwise stop 4sec;              
             SRM.RateAddition(2);
             HTMLUpdate("LastAction", "RecordOHLCData");
+
+            // Get the data from Kraken API
             OHLCReceived = this.GetOHLCDatas(since, period);
 
             // null if error in parsing likely due to a error message from API
@@ -343,15 +352,24 @@ namespace KrakenService
                 {
                     case 1440:
                         ListOfOHLCData1440.AddRange(listtemp);
-                        csv.WriteRecords(ListOfOHLCData1440);
+                        foreach (var item in ListOfOHLCData1440)
+                        {
+                            csv.WriteRecord(item);
+                        }
                         break;
                     case 60:
                         ListOfOHLCData60.AddRange(listtemp);
-                        csv.WriteRecords(ListOfOHLCData60);
+                        foreach (var item in ListOfOHLCData60)
+                        {
+                            csv.WriteRecord(item);
+                        }
                         break;
                     case 30:
                         ListOfOHLCData30.AddRange(listtemp);
-                        csv.WriteRecords(ListOfOHLCData30);
+                        foreach (var item in ListOfOHLCData30)
+                        {
+                            csv.WriteRecord(item);
+                        }
                         break;
                 }
             }
@@ -419,7 +437,7 @@ namespace KrakenService
                 csv.WriteRecords(ListOfCurrentOrder);
             }
 
-            OrderBookPerT.Add(ListOfCurrentOrder);
+            //OrderBookPerT.Add(ListOfCurrentOrder);
 
          }
 
@@ -479,8 +497,8 @@ namespace KrakenService
             try
             {
                 JObject OpenedOrdersJson = (JObject)obj["result"]["open"];
-                // if orderID is empty, it means that no orders are currently done or th application has been stopped and started 
-                if (OpenedOrders != null && OpenedOrders.ToString() != "{}")
+                // if orderID is empty, it means that no orders are currently done or the application has been stopped and started 
+                if (OpenedOrders != null && OpenedOrders.ToString() != "{}" && OpenedOrdersJson.HasValues)
                 {
                     string txid = OpenedOrdersJson.Properties().First().Name;
                     // Foreach orders store each orders 

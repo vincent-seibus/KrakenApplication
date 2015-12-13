@@ -1,6 +1,7 @@
 ﻿using KrakenClient;
 using KrakenService.KrakenObjects;
 using KrakenService.MarketAnalysis;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -61,7 +62,8 @@ namespace KrakenService
 
             //Get order id from response
             // Check response if no error and change status, don't change status otherwise
-            if (GetOrderIdFromResponse(response) != null)
+            OpenedOrder orderOpened = new OpenedOrder() { OrderType = "limit", Type = "sell", Price = (double)order.Price, Volume = (double)order.Volume };
+            if (GetOrderIdFromResponse(response, orderOpened) != null)
             {
                 return true;
             }
@@ -96,7 +98,8 @@ namespace KrakenService
 
             //Get order id from response
             // Check response if no error and change status, don't change status otherwise
-            if (GetOrderIdFromResponse(response) != null)
+            OpenedOrder orderOpened = new OpenedOrder() { OrderType = "limit", Type = "buy", Price = (double)order.Price, Volume = (double)order.Volume };
+            if (GetOrderIdFromResponse(response, orderOpened) != null)
             {            
                     return true;                           
             }
@@ -245,14 +248,14 @@ namespace KrakenService
 
         #region helpers
 
-        public string GetOrderIdFromResponse(string response)
+        public string GetOrderIdFromResponse(string response, OpenedOrder order)
         {
             JObject resp = JObject.Parse(response);
             try
             {
                 JArray array = (JArray)resp["result"]["txid"];
-                // need to retrieve the price as well
-                analysier.MyOpenedOrders.Add(new OpenedOrder() { OrderID = array[0].ToString() });
+                order.OrderID = array[0].ToString();
+                analysier.MyOpenedOrders.Add(order);
                 return array.ToString();
             }
             catch (Exception ex)
@@ -270,9 +273,9 @@ namespace KrakenService
                 dynamic Context = new JObject();
                 Context.PlayerState = Enum.GetName(typeof(PlayerState), playerState);
                 if (analysier.MyOpenedOrders.Count != 0)
-                    Context.OrderID = analysier.MyOpenedOrders.FirstOrDefault().OrderID;
+                    Context.Order = JsonConvert.SerializeObject(analysier.MyOpenedOrders.FirstOrDefault());
                 else
-                    Context.OrderID = "";
+                    Context.Order = "";
                 File.WriteAllText(pathfile, Context.ToString());
             }
             catch (Exception ex)
@@ -290,8 +293,11 @@ namespace KrakenService
                 JObject Context = JObject.Parse(json);
                 playerState = (PlayerState)Enum.Parse(typeof(PlayerState), Context["PlayerState"].ToString());
 
-                if (!string.IsNullOrEmpty( Context["OrderID"].ToString()))
-                analysier.MyOpenedOrders.Add( new OpenedOrder() { OrderID = Context["OrderID"].ToString() });
+                if (!string.IsNullOrEmpty(Context["Order"].ToString()))
+                {
+                    OpenedOrder order = JsonConvert.DeserializeObject<OpenedOrder>(Context["Order"].ToString());
+                    analysier.MyOpenedOrders.Add(order);
+                }
 
                 return playerState;
             }
@@ -319,7 +325,6 @@ namespace KrakenService
 
             return pathFile;
         }
-        
 
         #endregion
 

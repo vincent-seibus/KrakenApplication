@@ -79,7 +79,7 @@ namespace KrakenService.MarketAnalysis
                     GetLowerPrice();
                     GetLastMiddleQuote();
                     GetLastPrice();
-                    Thread.Sleep(1000);
+                    Thread.Sleep(5000);
                 }
                 catch (Exception ex)
                 {
@@ -189,10 +189,24 @@ namespace KrakenService.MarketAnalysis
                 double BidDepthPercentage = BidDepth / LastMiddleQuote;
                 double AskDepthPercentage = AskDepth / LastMiddleQuote;
 
+                //record the Order book analysied data
                 string filepath = CheckFileAndDirectoryOrderBookAnalysis();
                 List<OrderBookAnalysedData> list = new List<OrderBookAnalysedData>();
+                Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;                
                 list.Add(new OrderBookAnalysedData() 
-                { LowerAsk = LastLowerAsk, LowerBid = LastLowerBid, HigherAsk = LastHigherAsk, HigherBid = LastHigherBid, AskDepth = AskDepth, AskVolume = SumVolumeAsk, BidDepth = BidDepth, BidVolume = SumVolumeBid, DepthRatio = BidDepth / AskDepth, VolumeRatio = SumVolumeBid / SumVolumeAsk });
+                {   UnixTimestamp = unixTimestamp,
+                    Timestamp = DateTime.UtcNow,
+                    LowerAsk = LastLowerAsk, 
+                    LowerBid = LastLowerBid, 
+                    HigherAsk = LastHigherAsk, 
+                    HigherBid = LastHigherBid, 
+                    AskDepth = AskDepth, 
+                    AskVolume = SumVolumeAsk, 
+                    BidDepth = BidDepth, 
+                    BidVolume = SumVolumeBid, 
+                    DepthRatio = BidDepth / AskDepth, 
+                    VolumeRatio = SumVolumeBid / SumVolumeAsk });
+                
                 using (StreamWriter writer = File.AppendText(filepath))
                 {
                     var csv = new CsvWriter(writer);
@@ -231,6 +245,26 @@ namespace KrakenService.MarketAnalysis
             }
 
             return pathFile;
+        }
+
+        public void intialize()
+        {
+            recorder.GetOpenOrders();
+            if (recorder.OpenedOrders.Count == 0)
+            {
+                MyOpenedOrders.Clear();
+            }
+            else
+            {
+                if (MyOpenedOrders.Count != 0)
+                {
+                    var OpenedOrders = recorder.OpenedOrders.Select(a => a.OrderID);
+                    if (!MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
+                    {
+                        MyOpenedOrders.Clear();
+                    }
+                }
+            }
         }
 
         #endregion 

@@ -9,6 +9,8 @@ namespace KrakenService.KrakenObjects
     [Serializable]
     public class OrderBookAnalysedData
     {
+        public long UnixTimestamp { get; set; }
+        public DateTime Timestamp { get; set; }
         public double LowerBid { get; set; }
         public double HigherBid { get; set; }
         public double LowerAsk { get; set; }

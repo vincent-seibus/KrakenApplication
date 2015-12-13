@@ -57,15 +57,22 @@ namespace KrakenService.MarketAnalysis
         {
             try
             {
-                if (!recorder.GetOpenOrders())
-                    return true;
+                if (MyOpenedOrders.Count != 0)
+                {
+                    if(MyOpenedOrders.First().Price < LastPrice)
+                    {
+                        if (!recorder.GetOpenOrders())
+                            return true;
 
-                var OpenedOrders = recorder.OpenedOrders.Select(a => a.OrderID);
+                        var OpenedOrders = recorder.OpenedOrders.Select(a => a.OrderID);
 
-                if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
-                    return true;
-                else
-                    return false;
+                        if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
+                            return true;
+                    }
+                }
+
+                return false;
+
             }
             catch (Exception ex)
             {
@@ -76,29 +83,23 @@ namespace KrakenService.MarketAnalysis
 
         public bool Selling()
         {
-            /*/
-            if(MyOpenedOrders.Count == 0)
-            {
-                return false;
-            }
-                       
-
-            if(MyOpenedOrders.First() != null && MyOpenedOrders.First().Price < LastPrice )
-            {
-                
-            }
-            /*/
             try
             {
-                if (!recorder.GetOpenOrders())
-                    return true;
+                if (MyOpenedOrders.Count != 0)
+                {
+                    if (MyOpenedOrders.First().Price > LastPrice)
+                    {
+                        if (!recorder.GetOpenOrders())
+                            return true;
 
-                var OpenedOrders = recorder.OpenedOrders.Select(a => a.OrderID);
+                        var OpenedOrders = recorder.OpenedOrders.Select(a => a.OrderID);
 
-                if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
-                    return true;
-                else
-                    return false;
+                        if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
+                            return true;
+                    }
+                }
+
+                return false;
             }
              catch (Exception ex)
              {
