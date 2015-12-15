@@ -24,8 +24,8 @@ namespace KrakenService.MarketAnalysis
         
         public bool Buy()
         {           
-            double limit = Convert.ToInt16(ConfigurationManager.AppSettings["StartBuyingLimitForOrderBookMethod"]);
-            if (false)
+            double limit = Convert.ToInt16(ConfigurationManager.AppSettings["StartBuyingLimitForOrderBookMethod"]);          
+            if (orderBookAnalysedData.VolumeRatio > limit)
             {
                 GetPriceToBuy();
                 GetVolumeToBuy();

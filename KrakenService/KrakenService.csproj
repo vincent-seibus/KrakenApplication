@@ -58,11 +58,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="KrakenObjects\OrderBookAnalysedData.cs" />
-    <Compile Include="MarketAnalysis\AbstractAnalysier.cs" />
+    <Compile Include="MarketAnalysis\Base\AbstractAnalysier.cs" />
     <Compile Include="Analysier.cs" />
     <Compile Include="MarketAnalysis\BollingerMethod.cs" />
     <Compile Include="MarketAnalysis\HighFrequencyMethod.cs" />
-    <Compile Include="MarketAnalysis\IAnalysier.cs" />
+    <Compile Include="MarketAnalysis\Base\IAnalysier.cs" />
     <Compile Include="KrakenObjects\Balance.cs" />
     <Compile Include="KrakenObjects\CurrentOrder.cs" />
     <Compile Include="KrakenObjects\OHLCData.cs" />

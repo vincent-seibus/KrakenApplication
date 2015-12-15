@@ -16,8 +16,8 @@
     <add key="StandardDeviationMultplicateurStopLoss" value="3" /> <!--it is the multiplicateur of the standard deviation cto set up stop loss price-->    
     <add key="FeeInPercentage" value="0.38" /> <!--in percentage 0.14% + 0.24%-->
 	<add key="MarginOnFeeInPercentage" value="0.2" /> <!--in percentage -->
-  
-   
-    <add key="UrlHtmlFile" value="C:\Users\vincent\Desktop\KrakenApplication\KrakenApp\ResultPage.html"/>
+   <add key="StartBuyingLimitForOrderBookMethodVolumeRatio" value="0.9" /> 
+
+   <add key="UrlHtmlFile" value="C:\Users\vincent\Desktop\KrakenApplication\KrakenApp\ResultPage.html"/>
 	</appSettings>
 
