@@ -38,12 +38,16 @@ namespace KrakenService.MarketAnalysis
         public double StochasticKIndex { get; set; }
         public double StochasticDIndex { get; set; }
         public double RSIIndex { get; set; }
+        public OrderBookAnalysedData orderBookAnalysedData {get; set;}
      
         //Property configuration   
         private NumberFormatInfo NumberProvider { get; set; }
         public double PercentageOfFund { get; set; }
         private double Multiplicateur { get; set; }
         public double MinimalPercentageOfEarning { get; set; } // it is in percent 
+
+
+
      
         public AbstractAnalysier(string i_Pair, Recorder rec, double percentageoffund)
         {
@@ -192,20 +196,24 @@ namespace KrakenService.MarketAnalysis
                 //record the Order book analysied data
                 string filepath = CheckFileAndDirectoryOrderBookAnalysis();
                 List<OrderBookAnalysedData> list = new List<OrderBookAnalysedData>();
-                Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;                
-                list.Add(new OrderBookAnalysedData() 
-                {   UnixTimestamp = unixTimestamp,
+                Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+
+                orderBookAnalysedData = new OrderBookAnalysedData()
+                {
+                    UnixTimestamp = unixTimestamp,
                     Timestamp = DateTime.UtcNow,
-                    LowerAsk = LastLowerAsk, 
-                    LowerBid = LastLowerBid, 
-                    HigherAsk = LastHigherAsk, 
-                    HigherBid = LastHigherBid, 
-                    AskDepth = AskDepth, 
-                    AskVolume = SumVolumeAsk, 
-                    BidDepth = BidDepth, 
-                    BidVolume = SumVolumeBid, 
-                    DepthRatio = BidDepth / AskDepth, 
-                    VolumeRatio = SumVolumeBid / SumVolumeAsk });
+                    LowerAsk = LastLowerAsk,
+                    LowerBid = LastLowerBid,
+                    HigherAsk = LastHigherAsk,
+                    HigherBid = LastHigherBid,
+                    AskDepth = AskDepth,
+                    AskVolume = SumVolumeAsk,
+                    BidDepth = BidDepth,
+                    BidVolume = SumVolumeBid,
+                    DepthRatio = BidDepth / AskDepth,
+                    VolumeRatio = SumVolumeBid / SumVolumeAsk
+                };
+                list.Add(orderBookAnalysedData);
                 
                 using (StreamWriter writer = File.AppendText(filepath))
                 {
@@ -213,8 +221,7 @@ namespace KrakenService.MarketAnalysis
                     foreach (var item in list)
                     {
                         csv.WriteRecord(item);
-                    }
-                    
+                    }                    
                 }
 
                 return LastMiddleQuote;
