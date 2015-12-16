@@ -318,8 +318,7 @@ namespace KrakenService
            
             // Sending rate increase the meter and check if can continue ootherwise stop 4sec;              
             SRM.RateAddition(2);
-            HTMLUpdate("LastAction", "RecordOHLCData");
-
+           
             // Get the data from Kraken API
             OHLCReceived = this.GetOHLCDatas(since, period);
 
@@ -348,30 +347,11 @@ namespace KrakenService
             using (StreamWriter writer = File.AppendText(filePath))
             {
                 var csv = new CsvWriter(writer);
-                switch (period)
-                {
-                    case 1440:
-                        ListOfOHLCData1440.AddRange(listtemp);
-                        foreach (var item in ListOfOHLCData1440)
+                        foreach (var item in listtemp)
                         {
                             csv.WriteRecord(item);
                         }
-                        break;
-                    case 60:
-                        ListOfOHLCData60.AddRange(listtemp);
-                        foreach (var item in ListOfOHLCData60)
-                        {
-                            csv.WriteRecord(item);
-                        }
-                        break;
-                    case 30:
-                        ListOfOHLCData30.AddRange(listtemp);
-                        foreach (var item in ListOfOHLCData30)
-                        {
-                            csv.WriteRecord(item);
-                        }
-                        break;
-                }
+                
             }
 
             // record last period
