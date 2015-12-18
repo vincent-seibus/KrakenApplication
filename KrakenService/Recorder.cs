@@ -78,11 +78,11 @@ namespace KrakenService
             GetLastTradingDataRecorded();
             Task.Run(() => GetRecordsRegularly());
 
-            Thread.Sleep(1000);
+            Thread.Sleep(2000);
             Task.Run(() => GetOHLCDataRecordRegularly(30));
-            Thread.Sleep(1000);
+            Thread.Sleep(2000);
             Task.Run(() => GetOHLCDataRecordRegularly(60));
-            Thread.Sleep(1000);
+            Thread.Sleep(2000);
             Task.Run(() => GetOHLCDataRecordRegularly(1440));
         }
 
@@ -106,7 +106,7 @@ namespace KrakenService
             while (true)
             {
                 sinceOHLCdata = RecordOHLCData(sinceOHLCdata, period);
-                Thread.Sleep(period * 1000);
+                Thread.Sleep(period * 60 * 1000);
             }
         }
 
