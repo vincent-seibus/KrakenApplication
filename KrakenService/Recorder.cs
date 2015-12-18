@@ -21,29 +21,29 @@ namespace KrakenService
         public KrakenClient.KrakenClient client { get; set; }
         public string Pair { get; set; }
         public ServerTime servertime { get; set; }
-        
+
         //Recent trade property
         public RecentTrades recenttrades { get; set; }
         public List<TradingData> ListOftradingDatas { get; set; }
-        public List<TradingData> ListOftradingDatasFiltered { get; set; } 
+        public List<TradingData> ListOftradingDatasFiltered { get; set; }
 
         //Recent trade property
         public RecentTrades OHLCReceived { get; set; }
         public List<OHLCData> ListOfOHLCData30 { get; set; }
         public List<OHLCData> ListOfOHLCData60 { get; set; }
         public List<OHLCData> ListOfOHLCData1440 { get; set; }
-        
+
         //Bablance property
         public Balance CurrentBalance { get; set; }
-        
+
         //orderbook property
         public OrdersBook ordersBook { get; set; }
         public List<OrderOfBook> ListOfCurrentOrder { get; set; }
         public List<List<OrderOfBook>> OrderBookPerT { get; set; }
 
         // My orders section
-        public List<CurrentOrder> OpenedOrders { get; set; }
-        
+        public List<OpenedOrder> OpenedOrders { get; set; }
+
 
         // Config property
         // inetrval in second is the last interval of data to keep 
@@ -56,7 +56,7 @@ namespace KrakenService
         public Recorder(string i_pair, SendingRateManager srm)
         {
             NumberProvider = new NumberFormatInfo();
-            NumberProvider.CurrencyDecimalSeparator = ".";           
+            NumberProvider.CurrencyDecimalSeparator = ".";
 
             SRM = srm;
             CurrentBalance = new Balance();
@@ -70,7 +70,7 @@ namespace KrakenService
             Pair = i_pair;
             IntervalInSecond = Convert.ToDouble(ConfigurationManager.AppSettings["IntervalStoredInMemoryInSecond"]); // it is to keep the data in memory from X (inetrval) to now.
             OrderBookCount = Convert.ToInt16(ConfigurationManager.AppSettings["OrderBookCount"]);
-            OpenedOrders = new List<CurrentOrder>();
+            OpenedOrders = new List<OpenedOrder>();
 
             // Start recording 
             GetOpenOrders();
@@ -90,7 +90,7 @@ namespace KrakenService
         {
             long? sinceTradeData = null;
 
-            while(true)
+            while (true)
             {
                 sinceTradeData = RecordRecentTradeData(sinceTradeData);
                 Thread.Sleep(1000);
@@ -105,8 +105,8 @@ namespace KrakenService
 
             while (true)
             {
-               sinceOHLCdata = RecordOHLCData(sinceOHLCdata, period);
-               Thread.Sleep(period * 1000);
+                sinceOHLCdata = RecordOHLCData(sinceOHLCdata, period);
+                Thread.Sleep(period * 1000);
             }
         }
 
@@ -121,7 +121,7 @@ namespace KrakenService
                 servertime = JsonConvert.DeserializeObject<ServerTime>(servertimeJson["result"].ToString());
                 return servertime;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
                 return servertime;
@@ -149,7 +149,7 @@ namespace KrakenService
                 recenttrades.Last = result.last;
                 return recenttrades;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
             }
@@ -162,7 +162,7 @@ namespace KrakenService
             recenttrades = null;
             int PeriodOHLCData = Convert.ToInt16(period);
 
-            JObject jo = JObject.Parse(client.GetOHLCData(Pair,PeriodOHLCData,since).ToString());
+            JObject jo = JObject.Parse(client.GetOHLCData(Pair, PeriodOHLCData, since).ToString());
             try
             {
                 // check if error
@@ -199,7 +199,7 @@ namespace KrakenService
                     Console.WriteLine(jo["error"]);
                     return null;
                 }
-                               
+
                 JArray jsonasks = (JArray)jo["result"][Pair]["asks"];
                 JArray jsonbids = (JArray)jo["result"][Pair]["bids"];
                 List<List<string>> listasks = jsonasks.ToObject<List<List<string>>>();
@@ -212,7 +212,7 @@ namespace KrakenService
                 ordersBook.Pair = Pair;
 
                 return ordersBook;
-                
+
             }
             catch (Exception ex)
             {
@@ -222,252 +222,281 @@ namespace KrakenService
             return null;
         }
 
-        #endregion 
+        #endregion
 
         #region Record region
         //Public
         public long? RecordRecentTradeData(long? since)
         {
-            TradingData lastdata = GetLastTradingRecord();
-         
-            // check last data recorded in the file and format it.
-            if (lastdata != null && since == null)
+            try
             {
-                String last = Convert.ToString(lastdata.UnixTime, NumberProvider);        
-                String lastgood = last.Replace(".","");
-                while(lastgood.Length < 19)
+                TradingData lastdata = GetLastTradingRecord();
+
+                // check last data recorded in the file and format it.
+                if (lastdata != null && since == null)
                 {
-                    lastgood += "0";
+                    String last = Convert.ToString(lastdata.UnixTime, NumberProvider);
+                    String lastgood = last.Replace(".", "");
+                    while (lastgood.Length < 19)
+                    {
+                        lastgood += "0";
+                    }
+
+                    since = Convert.ToInt64(lastgood, NumberProvider);
                 }
 
-                since = Convert.ToInt64(lastgood, NumberProvider);
-            }
-
-            if (ListOftradingDatas.Count == 0 && ListOftradingDatasFiltered != null && ListOftradingDatasFiltered.Count > 0)
-            {
-                ListOftradingDatas = ListOftradingDatasFiltered;
-            }
-
-            string filePath = CheckFileAndDirectoryTradingData();          
-                
-            // Sending rate increase the meter and check if can continue ootherwise stop 4sec;               
-            SRM.RateAddition(2);
-            HTMLUpdate("LastAction", "RecordRecentTradeData");
-
-            recenttrades = this.GetRecentTrades(since);
-            // null if error in parsing likely due to a error message from API
-            if(recenttrades == null)
-            {
-                return null;
-            }
-            //record last timestamp
-            since = recenttrades.Last;
-            List<TradingData> listtemp = new List<TradingData>();
-            //Treatment of the datas and store it in list
-            foreach (List<string> ls in recenttrades.Datas)
-            {
-                // Foreach line, register in file and in the lsit
-                TradingData td = new TradingData();
-                int i = 0;
-                foreach (string s in ls)
+                if (ListOftradingDatas.Count == 0 && ListOftradingDatasFiltered != null && ListOftradingDatasFiltered.Count > 0)
                 {
-                    RecordTradingDataInList(i, s, td);
-                    i++;
+                    ListOftradingDatas = ListOftradingDatasFiltered;
                 }
 
-                listtemp.Add(td);
-            }
+                string filePath = CheckFileAndDirectoryTradingData();
 
-            // add new records from API and Filtered also the ListOftradingDatas to get only 86400;
-            ListOftradingDatas.AddRange(listtemp);
-            Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-            ListOftradingDatas = ListOftradingDatas.Where(a => a.UnixTime > (unixTimestamp - IntervalInSecond)).ToList();
+                // Sending rate increase the meter and check if can continue ootherwise stop 4sec;               
+                SRM.RateAddition(2);
+                HTMLUpdate("LastAction", "RecordRecentTradeData");
 
-            using (StreamWriter writer = File.AppendText(filePath))
-            {
-                var csv = new CsvWriter(writer);
-                foreach (var item in listtemp)
+                recenttrades = this.GetRecentTrades(since);
+                // null if error in parsing likely due to a error message from API
+                if (recenttrades == null)
                 {
-                    csv.WriteRecord(item);
+                    return null;
                 }
-            }
+                //record last timestamp
+                since = recenttrades.Last;
+                List<TradingData> listtemp = new List<TradingData>();
+                //Treatment of the datas and store it in list
+                foreach (List<string> ls in recenttrades.Datas)
+                {
+                    // Foreach line, register in file and in the lsit
+                    TradingData td = new TradingData();
+                    int i = 0;
+                    foreach (string s in ls)
+                    {
+                        RecordTradingDataInList(i, s, td);
+                        i++;
+                    }
 
-            //record last filtered data in file
-            RecordLastTradingData();           
-            return since;
+                    listtemp.Add(td);
+                }
+
+                // add new records from API and Filtered also the ListOftradingDatas to get only 86400;
+                ListOftradingDatas.AddRange(listtemp);
+                Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+                ListOftradingDatas = ListOftradingDatas.Where(a => a.UnixTime > (unixTimestamp - IntervalInSecond)).ToList();
+
+                using (StreamWriter writer = File.AppendText(filePath))
+                {
+                    var csv = new CsvWriter(writer);
+                    foreach (var item in listtemp)
+                    {
+                        csv.WriteRecord(item);
+                    }
+                }
+
+                //record last filtered data in file
+                RecordLastTradingData();
+                return since;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error RecordRecentTradeData :" + ex.Message);
+                return since;
+            }
         }
 
         public long? RecordOHLCData(long? since, int period)
         {
-            string filePath = this.CheckFileAndDirectoryOHLCData(period);
-
-            // Check last data registered
-            OHLCData lastdata = GetLastLineOHLCDataRecorded(period);
-            if( lastdata != null && since == null)
+            try
             {
-                String last = Convert.ToString(lastdata.time, NumberProvider);
-                String lastgood = last.Replace(".", "");
-                while (lastgood.Length < 19)
+                string filePath = this.CheckFileAndDirectoryOHLCData(period);
+
+                // Check last data registered
+                OHLCData lastdata = GetLastLineOHLCDataRecorded(period);
+                if (lastdata != null && since == null)
                 {
-                    lastgood += "0";
+                    String last = Convert.ToString(lastdata.time, NumberProvider);
+                    String lastgood = last.Replace(".", "");
+                    while (lastgood.Length < 19)
+                    {
+                        lastgood += "0";
+                    }
+
+                    since = Convert.ToInt64(lastgood, NumberProvider);
+                    since = (long)lastdata.time;
                 }
 
-                since = Convert.ToInt64(lastgood, NumberProvider);
-                since = (long)lastdata.time;
-            }
-           
-            // Sending rate increase the meter and check if can continue ootherwise stop 4sec;              
-            SRM.RateAddition(2);
-           
-            // Get the data from Kraken API
-            OHLCReceived = this.GetOHLCDatas(since, period);
+                // Sending rate increase the meter and check if can continue ootherwise stop 4sec;              
+                SRM.RateAddition(2);
 
-            // null if error in parsing likely due to a error message from API
-            if (OHLCReceived == null)
-            {
-                return null ;
-            }
+                // Get the data from Kraken API
+                OHLCReceived = this.GetOHLCDatas(since, period);
 
-            List<OHLCData> listtemp = new List<OHLCData>();
-            foreach (List<string> ls in OHLCReceived.Datas)
-            {
-                // Foreach line, register in file and in the lsit
-                OHLCData td = new OHLCData();
-                int i = 0;
-                foreach (string s in ls)
+                // null if error in parsing likely due to a error message from API
+                if (OHLCReceived == null)
                 {
-                    RecordOHLCDataInList(i, s, td);
-                    i++;
+                    return null;
                 }
-                       
-                listtemp.Add(td);
-            }
-           
-            // Record list in file in function of period
-            using (StreamWriter writer = File.AppendText(filePath))
-            {
-                var csv = new CsvWriter(writer);
-                        foreach (var item in listtemp)
-                        {
-                            csv.WriteRecord(item);
-                        }
-                
-            }
 
-            // record last period
-            since = OHLCReceived.Last;
-            return since;
+                List<OHLCData> listtemp = new List<OHLCData>();
+                foreach (List<string> ls in OHLCReceived.Datas)
+                {
+                    // Foreach line, register in file and in the lsit
+                    OHLCData td = new OHLCData();
+                    int i = 0;
+                    foreach (string s in ls)
+                    {
+                        RecordOHLCDataInList(i, s, td);
+                        i++;
+                    }
+
+                    listtemp.Add(td);
+                }
+
+                // Record list in file in function of period
+                using (StreamWriter writer = File.AppendText(filePath))
+                {
+                    var csv = new CsvWriter(writer);
+                    foreach (var item in listtemp)
+                    {
+                        csv.WriteRecord(item);
+                    }
+
+                }
+
+                // record last period
+                since = OHLCReceived.Last;
+                return since;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error RecordOHLCData :" + ex.Message);
+                return since;
+            }
         }
 
         public void RecordOrderBook()
         {
-            string filePath = CheckFileAndDirectoryOrdersBook();
-
-            // Sending rate increase the meter and check if can continue ootherwise stop 4sec;
-            SRM.RateAddition(2);
-            HTMLUpdate("LastAction", "RecordOrderBook");
-
-            var ordersbook = this.GetOrdersBook();
-
-            // null if error in parsing likely due to a error message from API
-            if (ordersbook == null)
+            try
             {
-                return;
-            }
+                string filePath = CheckFileAndDirectoryOrdersBook();
 
-            //empty list before filling it up
-            ListOfCurrentOrder.Clear();
-            DateTime timeofrecord = DateTime.UtcNow;
-            foreach (List<string> ls in ordersBook.Asks)
-            {
-                // Foreach line, register in file and in the lsit
-                OrderOfBook co = new OrderOfBook();
-                co.OrderType = "ask";
+                // Sending rate increase the meter and check if can continue ootherwise stop 4sec;
+                SRM.RateAddition(2);
+                HTMLUpdate("LastAction", "RecordOrderBook");
 
-                int i = 0;
-                foreach (string s in ls)
+                var ordersbook = this.GetOrdersBook();
+
+                // null if error in parsing likely due to a error message from API
+                if (ordersbook == null)
                 {
-                    RecordOrdersBookInList(i, s, co);
-                    i++;
+                    return;
                 }
-                co.UniqueId =  (co.OrderType + co.Price + co.Volume + co.Timestamp).GetHashCode().ToString();                
-                co.TimeRecorded = timeofrecord;
-                ListOfCurrentOrder.Add(co);
-            }
 
-            foreach(List<string> ls in ordersbook.Bids)
-            {
-                OrderOfBook co = new OrderOfBook();
-                int i = 0;
-                co.OrderType = "bid";
-
-                foreach(string s in ls)
+                //empty list before filling it up
+                ListOfCurrentOrder.Clear();
+                DateTime timeofrecord = DateTime.UtcNow;
+                foreach (List<string> ls in ordersBook.Asks)
                 {
-                    RecordOrdersBookInList(i, s, co);
-                    i++;
+                    // Foreach line, register in file and in the lsit
+                    OrderOfBook co = new OrderOfBook();
+                    co.OrderType = "ask";
+
+                    int i = 0;
+                    foreach (string s in ls)
+                    {
+                        RecordOrdersBookInList(i, s, co);
+                        i++;
+                    }
+                    co.UniqueId = (co.OrderType + co.Price + co.Volume + co.Timestamp).GetHashCode().ToString();
+                    co.TimeRecorded = timeofrecord;
+                    ListOfCurrentOrder.Add(co);
                 }
-                co.UniqueId = (co.OrderType + co.Price + co.Volume + co.Timestamp).GetHashCode().ToString();
-                co.TimeRecorded = timeofrecord;
-                ListOfCurrentOrder.Add(co);
+
+                foreach (List<string> ls in ordersbook.Bids)
+                {
+                    OrderOfBook co = new OrderOfBook();
+                    int i = 0;
+                    co.OrderType = "bid";
+
+                    foreach (string s in ls)
+                    {
+                        RecordOrdersBookInList(i, s, co);
+                        i++;
+                    }
+                    co.UniqueId = (co.OrderType + co.Price + co.Volume + co.Timestamp).GetHashCode().ToString();
+                    co.TimeRecorded = timeofrecord;
+                    ListOfCurrentOrder.Add(co);
+                }
+
+                using (StreamWriter writer = File.AppendText(filePath))
+                {
+                    var csv = new CsvWriter(writer);
+                    csv.WriteRecords(ListOfCurrentOrder);
+                }
+
+                //OrderBookPerT.Add(ListOfCurrentOrder);
             }
-            
-            using (StreamWriter writer = File.AppendText(filePath))
+            catch (Exception ex)
             {
-                var csv = new CsvWriter(writer);
-                csv.WriteRecords(ListOfCurrentOrder);
+                Console.WriteLine("Error RecordOrderBook :" + ex.Message);
             }
-
-            //OrderBookPerT.Add(ListOfCurrentOrder);
-
-         }
+        }
 
         public void RecordLastTradingData()
         {
-            string filePathLast = CheckFileAndDirectoryLastTradingData();
-
-            Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-            ListOftradingDatasFiltered = ListOftradingDatas.Where(a => a.UnixTime > (unixTimestamp - IntervalInSecond)).ToList();
-
-            // EMpty the field before filling it 
-            System.IO.File.WriteAllText(filePathLast, string.Empty);
-
-            // Record last trade data - over written by new data each time
-            using (StreamWriter writer = new StreamWriter(File.OpenWrite(filePathLast)))
+            try
             {
-                var csv = new CsvWriter(writer);
-                csv.WriteRecords(ListOftradingDatasFiltered);
+                string filePathLast = CheckFileAndDirectoryLastTradingData();
+
+                Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+                ListOftradingDatasFiltered = ListOftradingDatas.Where(a => a.UnixTime > (unixTimestamp - IntervalInSecond)).ToList();
+
+                // EMpty the field before filling it 
+                System.IO.File.WriteAllText(filePathLast, string.Empty);
+
+                // Record last trade data - over written by new data each time
+                using (StreamWriter writer = new StreamWriter(File.OpenWrite(filePathLast)))
+                {
+                    var csv = new CsvWriter(writer);
+                    csv.WriteRecords(ListOftradingDatasFiltered);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error RecordLastTradingData :" + ex.Message);
             }
         }
 
         //Private
         public void RecordBalance()
-        {              
-                SRM.RateAddition(2);
-                HTMLUpdate("LastAction", "RecordBalance");
-                JObject jo = JObject.Parse(client.GetBalance().ToString());
-                try
+        {
+            SRM.RateAddition(2);
+            HTMLUpdate("LastAction", "RecordBalance");
+            JObject jo = JObject.Parse(client.GetBalance().ToString());
+            try
+            {
+                if (jo["error"] != null && jo["error"].ToString() != "[]")
                 {
-                    if(jo["error"] != null && jo["error"].ToString() != "[]" )
-                    {
-                        Console.WriteLine(jo["error"]);
-                        return;
-                    }
+                    Console.WriteLine(jo["error"]);
+                    return;
+                }
 
-                    CurrentBalance.BTC = Convert.ToDouble(jo["result"]["XXBT"], NumberProvider);
-                    CurrentBalance.EUR = Convert.ToDouble(jo["result"]["ZEUR"], NumberProvider);                    
-                    //Thread.Sleep(4500);
-                }
-                catch(Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                    // Log error
-                }
-            
+                CurrentBalance.BTC = Convert.ToDouble(jo["result"]["XXBT"], NumberProvider);
+                CurrentBalance.EUR = Convert.ToDouble(jo["result"]["ZEUR"], NumberProvider);
+                //Thread.Sleep(4500);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                // Log error
+            }
+
         }
 
         public bool GetOpenOrders()
         {
-           
+
             //Sleep to avoid temporary lock out caused by GetOpenOrder() method call
             SRM.RateAddition(2);
             HTMLUpdate("LastAction", "GetOpenOrders");
@@ -484,13 +513,13 @@ namespace KrakenService
                     // Foreach orders store each orders 
                     foreach (JProperty jn in OpenedOrdersJson.Properties())
                     {
-                        CurrentOrder openedorder = new CurrentOrder();
+                        OpenedOrder openedorder = new OpenedOrder();
                         JObject order = (JObject)OpenedOrdersJson[jn.Name];
                         openedorder.OrderID = jn.Name;
                         openedorder.Type = order["descr"]["type"].ToString();
                         openedorder.OrderType = order["descr"]["ordertype"].ToString();
                         openedorder.Price = Convert.ToDouble(order["descr"]["price"], NumberProvider);
-                        openedorder.Price2 = Convert.ToDouble(order["descr"]["price2"],NumberProvider);
+                        openedorder.Price2 = Convert.ToDouble(order["descr"]["price2"], NumberProvider);
                         openedorder.Volume = Convert.ToDouble(order["vol"], NumberProvider);
 
                         if (OpenedOrders.Count == 0 || OpenedOrders.Where(a => a.OrderID == openedorder.OrderID).Count() == 0)
@@ -522,7 +551,7 @@ namespace KrakenService
                 var csv = new CsvReader(reader);
                 var list = new List<OHLCData>();
                 try
-                {                    
+                {
                     while (csv.Read())
                     {
                         try
@@ -584,7 +613,7 @@ namespace KrakenService
                             var record = csv.GetRecord<TradingData>();
                             TradingDataList.Add(record);
                         }
-                        catch(Exception)
+                        catch (Exception)
                         {
 
                         }
@@ -624,7 +653,7 @@ namespace KrakenService
                 }
                 catch (Exception)
                 {
-                    
+
                 }
             }
         }
@@ -639,11 +668,11 @@ namespace KrakenService
         /// <returns></returns>
         public string CheckFileAndDirectoryTradingData()
         {
-              string pathDirectory = Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).ToString(),"TradingData" + Pair);
-            if(!Directory.Exists(pathDirectory))
+            string pathDirectory = Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).ToString(), "TradingData" + Pair);
+            if (!Directory.Exists(pathDirectory))
                 Directory.CreateDirectory(pathDirectory);
 
-            string pathFile = Path.Combine(pathDirectory, "TradingData_" + DateTime.Now.Year+DateTime.Now.Month+DateTime.Now.Day);
+            string pathFile = Path.Combine(pathDirectory, "TradingData_" + DateTime.Now.Year + DateTime.Now.Month);
             if (!File.Exists(pathFile))
             {
                 using (var myFile = File.Create(pathFile))
@@ -679,7 +708,7 @@ namespace KrakenService
             if (!Directory.Exists(pathDirectory))
                 Directory.CreateDirectory(pathDirectory);
 
-            string pathFile = Path.Combine(pathDirectory, "OrdersBook_" + DateTime.Now.Year + DateTime.Now.Month + DateTime.Now.Day);
+            string pathFile = Path.Combine(pathDirectory, "OrdersBook_" + DateTime.Now.Year + DateTime.Now.Month);
             if (!File.Exists(pathFile))
             {
                 using (var myFile = File.Create(pathFile))
@@ -713,8 +742,8 @@ namespace KrakenService
         public void RecordTradingDataInList(int i, string value, TradingData td)
         {
             // Create a NumberFormatInfo object and set some of its properties.
-          
-            switch(i)
+
+            switch (i)
             {
                 case 0:
                     td.Price = Convert.ToDouble(value, NumberProvider);
@@ -726,10 +755,10 @@ namespace KrakenService
                     td.UnixTime = Convert.ToDouble(value, NumberProvider);
                     break;
                 case 3:
-                td.BuyOrSell = value;
+                    td.BuyOrSell = value;
                     break;
                 case 4:
-                td.MarketOrLimit = value;
+                    td.MarketOrLimit = value;
                     break;
                 case 5:
                     td.Misc = value;
@@ -739,18 +768,18 @@ namespace KrakenService
 
         public void RecordOrdersBookInList(int i, string value, OrderOfBook order)
         {
-            switch(i)
+            switch (i)
             {
                 case 0:
-                    order.Price = Convert.ToDouble(value,NumberProvider);
-                 break;
+                    order.Price = Convert.ToDouble(value, NumberProvider);
+                    break;
                 case 1:
-                 order.Volume = Convert.ToDouble(value,NumberProvider);
-                 break;
+                    order.Volume = Convert.ToDouble(value, NumberProvider);
+                    break;
                 case 2:
-                 order.Timestamp = Convert.ToDouble(value, NumberProvider);
-                 break;
-                
+                    order.Timestamp = Convert.ToDouble(value, NumberProvider);
+                    break;
+
             }
         }
 
@@ -797,13 +826,13 @@ namespace KrakenService
                 lastprice.InnerHtml = valueToUpdate;
                 doc.Save(@"C:\Users\vlemaitre\Documents\GitHub\KrakenApplication\KrakenApp\ResultPage.html");
             }
-            catch(Exception)
+            catch (Exception)
             {
 
             }
         }
 
-        #endregion 
+        #endregion
 
     }
 }

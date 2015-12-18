@@ -18,7 +18,7 @@ namespace KrakenService
         public Analysier analysier { get; set; }
         public KrakenClient.KrakenClient client {get; set;}
         public string Pair { get; set; }
-        public List<CurrentOrder> MyOpenedOrders { get; set; }
+        public List<OpenedOrder> MyOpenedOrders { get; set; }
 
         // Context property
         public PlayerState playerState { get; set; }

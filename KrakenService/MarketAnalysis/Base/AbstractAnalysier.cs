@@ -242,7 +242,7 @@ namespace KrakenService.MarketAnalysis
             if (!Directory.Exists(pathDirectory))
                 Directory.CreateDirectory(pathDirectory);
 
-            string pathFile = Path.Combine(pathDirectory, "OrderBookDataAnalysed_" + DateTime.Now.Year + DateTime.Now.Month + DateTime.Now.Day);
+            string pathFile = Path.Combine(pathDirectory, "OrderBookDataAnalysed_" + DateTime.Now.Year + DateTime.Now.Month);
             if (!File.Exists(pathFile))
             {
                 using (var myFile = File.Create(pathFile))

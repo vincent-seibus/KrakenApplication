@@ -16,7 +16,7 @@ namespace KrakenService
         public Recorder recorder { get; set; }
         public List<TradingData> TradingDatasList { get; set; }
         public List<OrderOfBook> ordersBook { get; set; }
-        public List<CurrentOrder> MyOpenedOrders { get; set; }
+        public List<OpenedOrder> MyOpenedOrders { get; set; }
         public double WeightedStandardDeviation { get; set; }
         public double WeightedAverage { get; set; }
         public double LowerPrice { get; set; }
