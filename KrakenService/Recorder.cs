@@ -13,6 +13,7 @@ using KrakenClient;
 using System.Globalization;
 using CsvHelper;
 using HtmlAgilityPack;
+using KrakenService.Data;
 
 namespace KrakenService
 {
@@ -285,6 +286,7 @@ namespace KrakenService
                 Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
                 ListOftradingDatas = ListOftradingDatas.Where(a => a.UnixTime > (unixTimestamp - IntervalInSecond)).ToList();
 
+                //register in csv file
                 using (StreamWriter writer = File.AppendText(filePath))
                 {
                     var csv = new CsvWriter(writer);
@@ -293,6 +295,12 @@ namespace KrakenService
                         csv.WriteRecord(item);
                     }
                 }
+
+                //register in mysql database
+                MySqlIdentityDbContext db = new MySqlIdentityDbContext();
+                db.TradingDatas.AddRange(listtemp);
+                db.SaveChanges();
+                db.Dispose();
 
                 //record last filtered data in file
                 RecordLastTradingData();

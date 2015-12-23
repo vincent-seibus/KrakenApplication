@@ -17,6 +17,7 @@ using System.Globalization;
 using HtmlAgilityPack;
 using System.Configuration;
 using KrakenService.MarketAnalysis;
+using KrakenService.Data;
 
 
 namespace KrakenApp
@@ -29,19 +30,10 @@ namespace KrakenApp
             string pair = "XXBTZEUR";
 
              SendingRateManager SRM = new SendingRateManager();
-             KrakenClient.KrakenClient client = new KrakenClient.KrakenClient();
-              
-
-             //string result = client.CancelOrder("O3V2NP-DTB7Z-EEKGIC").ToString();
-             Console.WriteLine(client.GetBalance());
-             //Console.ReadKey();
-
              KrakenService.Recorder rec1 = new KrakenService.Recorder(pair, SRM);
-            HighFrequencyMethod ana1 = new HighFrequencyMethod(pair,rec1,0.6);
+             HighFrequencyMethod ana1 = new HighFrequencyMethod(pair,rec1,0.6);
              RSIMethod rsi1 = new RSIMethod(pair, rec1, 0.4);
-             rsi1.InitializeRSI();
-
-
+           
              NewPlayer play1 = new NewPlayer(ana1, pair, SRM);
              ana1.intialize(); 
 
