@@ -22,6 +22,8 @@ namespace KrakenService.Data
         }
 
         public DbSet<TradingData> TradingDatas { get; set; }
+        public DbSet<OrderBookAnalysedData> OrderBookDatas { get; set; }
+
         
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
@@ -33,8 +35,7 @@ namespace KrakenService.Data
     {
         protected override void Seed(MySqlIdentityDbContext context)
         {
-            // create 3 students to seed the database           
-            context.TradingDatas.Add(new TradingData { Price = 0});           
+            // create 3 students to seed the database                       
             base.Seed(context);
         }
     }

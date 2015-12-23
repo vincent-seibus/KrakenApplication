@@ -27,19 +27,8 @@ namespace KrakenService.MarketAnalysis
         public List<TradingData> TradingDatasList { get; set; }
         public double WeightedStandardDeviation { get; set; }
         public double WeightedAverage { get; set; }
-        public double LowerPrice { get; set; }
-        public double HigherPrice { get; set; }
-        public double LastPrice { get; set; }
-        public double LastMiddleQuote { get; set; }
-        public double LastLowerAsk { get; set; }
-        public double LastHigherBid { get; set; }
-        public double LastLowerBid { get; set; }
-        public double LastHigherAsk { get; set; }
-        public double StochasticKIndex { get; set; }
-        public double StochasticDIndex { get; set; }
-        public double RSIIndex { get; set; }
-        public OrderBookAnalysedData orderBookAnalysedData {get; set;}
-     
+        public double LastPrice { get; set; }      
+      
         //Property configuration   
         private NumberFormatInfo NumberProvider { get; set; }
         public double PercentageOfFund { get; set; }
@@ -75,10 +64,7 @@ namespace KrakenService.MarketAnalysis
                 try
                 {
                     GetWeightedAverage();
-                    GetWeightedStandardDeviation();
-                    GetHigherPrice();
-                    GetLowerPrice();
-                    GetLastMiddleQuote();
+                    GetWeightedStandardDeviation();                  
                     GetLastPrice();
                     Thread.Sleep(5000);
                 }
@@ -131,35 +117,7 @@ namespace KrakenService.MarketAnalysis
                 return WeightedAverage;
             }
         }
-
-        public double GetLowerPrice()
-        {
-            try
-            {
-                LowerPrice = TradingDatasList.ToList().Select(a => a.Price).DefaultIfEmpty().Min();
-            }
-            catch (Exception ex)
-            {
-                return LowerPrice;
-            }
-
-            return LowerPrice;
-        }
-
-        public double GetHigherPrice()
-        {
-            try
-            {
-                HigherPrice = TradingDatasList.Select(a => a.Price).DefaultIfEmpty().Max();
-            }
-            catch (Exception ex)
-            {
-                return HigherPrice;
-            }
-
-            return HigherPrice;
-        }
-
+        
         public double GetLastPrice()
         {            
             try
@@ -171,76 +129,11 @@ namespace KrakenService.MarketAnalysis
             {
                 return LastPrice;
             }
-        }
-
-        public double GetLastMiddleQuote()
-        {
-            OrdersBook = recorder.ListOfCurrentOrder;
-            try
-            {
-                LastLowerAsk = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "ask").OrderBy(a => a.Price).FirstOrDefault().Price);
-                LastHigherAsk = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "ask").OrderByDescending(a => a.Price).FirstOrDefault().Price);
-                LastHigherBid = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "bid").OrderByDescending(a => a.Price).FirstOrDefault().Price);
-                LastLowerBid = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "bid").OrderBy(a => a.Price).FirstOrDefault().Price);
-                double SumVolumeBid = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "bid").Sum(a => a.Volume));
-                double SumVolumeAsk = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "ask").Sum(a => a.Volume));
-                double BidDepth = LastHigherBid - LastLowerBid;
-                double AskDepth = LastHigherAsk - LastLowerAsk;
-                LastMiddleQuote = (LastHigherBid + LastLowerAsk) / 2;
-                double BidDepthPercentage = BidDepth / LastMiddleQuote;
-                double AskDepthPercentage = AskDepth / LastMiddleQuote;
-
-                //record the Order book analysied data
-                string filepath = CheckFileAndDirectoryOrderBookAnalysis();
-                List<OrderBookAnalysedData> list = new List<OrderBookAnalysedData>();
-                Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-
-                orderBookAnalysedData = new OrderBookAnalysedData()
-                {
-                    UnixTimestamp = unixTimestamp,
-                    Timestamp = DateTime.UtcNow,
-                    LowerAsk = LastLowerAsk,
-                    LowerBid = LastLowerBid,
-                    HigherAsk = LastHigherAsk,
-                    HigherBid = LastHigherBid,
-                    AskDepth = AskDepth,
-                    AskVolume = SumVolumeAsk,
-                    BidDepth = BidDepth,
-                    BidVolume = SumVolumeBid,
-                    DepthRatio = BidDepth / AskDepth,
-                    VolumeRatio = SumVolumeBid / SumVolumeAsk
-                };
-                list.Add(orderBookAnalysedData);              
-
-                return LastMiddleQuote;
-            }
-            catch (Exception ex)
-            {
-                return LastMiddleQuote;
-            }
-        }
+        }     
 
         #endregion 
-                
+   
         #region helpers
-
-        public string CheckFileAndDirectoryOrderBookAnalysis()
-        {
-            string pathDirectory = Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).ToString(), "OrderBookDataAnalysed" + Pair);
-            if (!Directory.Exists(pathDirectory))
-                Directory.CreateDirectory(pathDirectory);
-
-            string pathFile = Path.Combine(pathDirectory, "OrderBookDataAnalysed_" + DateTime.Now.Year + DateTime.Now.Month);
-            if (!File.Exists(pathFile))
-            {
-                using (var myFile = File.Create(pathFile))
-                {
-                    // interact with myFile here, it will be disposed automatically
-                }
-            }
-
-            return pathFile;
-        }
 
         public void intialize()
         {

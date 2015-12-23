@@ -1,150 +1,81 @@
-﻿using System;
+﻿using CsvHelper;
+using KrakenService.Data;
+using KrakenService.KrakenObjects;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace KrakenService.MarketAnalysis
 {
     public class OrderBookAnalysisMethod : AbstractAnalysier, IAnalysier
     {
+        #region Property Interface 
         public double VolumeToBuy { get; set; }
         public double VolumeToSell { get; set; }
         public double PriceToSellProfit { get; set; }
         public double PriceToSellStopLoss { get; set; }
         public double PriceToBuyProfit { get; set; }
         public double PriceToBuyStopLoss { get; set; }
+        #endregion
+
+        #region Property Specific
+        public bool OrderBookIndexesPlay { get; set; }
+        public OrderBookAnalysedData orderBookAnalysedData { get; set; }
+        public double LastMiddleQuote { get; set; }
+        public MySqlIdentityDbContext DbOrderBook { get; set; }
+
+        #endregion
 
         public OrderBookAnalysisMethod(string Pair, Recorder rec, double PercentageOfFund)
             : base(Pair, rec, PercentageOfFund)
             {
                                   
             }
-        
+
+        #region Method Interface
         public bool Buy()
-        {           
-            double limit = Convert.ToInt16(ConfigurationManager.AppSettings["StartBuyingLimitForOrderBookMethod"]);          
-            if (orderBookAnalysedData.VolumeRatio > limit)
-            {
-                GetPriceToBuy();
-                GetVolumeToBuy();
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+        {
+            throw new NotImplementedException();
         }
 
         public bool Sell()
         {
-            // Why you should sell 
-
-            // Because you have BTC 
-
-            // Because the BTC is higher than the average
-
-            GetPriceToSell();
-            GetVolumeToSell();
-            return true;
+            throw new NotImplementedException();
         }
 
         public bool Buying()
         {
-            try
-            {
-                if (MyOpenedOrders.Count != 0)
-                {
-                    if(MyOpenedOrders.First().Price > LastPrice)
-                    {
-                        if (!recorder.GetOpenOrders())
-                            return true;
-
-                        var OpenedOrders = recorder.OpenedOrders.Select(a => a.OrderID);
-
-                        if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
-                            return true;
-
-                        return false;
-                    }
-
-                    return true;
-                }
-
-                return false;
-
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(typeof(HighFrequencyMethod).ToString() + ".Buying : " + ex.Message);
-                return true;
-            }
+            throw new NotImplementedException();
         }
 
         public bool Selling()
         {
-            try
-            {
-                if (MyOpenedOrders.Count != 0)
-                {
-                    if (MyOpenedOrders.First().Price < LastPrice)
-                    {
-                        if (!recorder.GetOpenOrders())
-                            return true;
-
-                        var OpenedOrders = recorder.OpenedOrders.Select(a => a.OrderID);
-
-                        if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
-                            return true;
-
-                        return false;
-                    }
-
-                    return true;
-                }
-
-                return false;
-            }
-             catch (Exception ex)
-             {
-                 Console.WriteLine(typeof(HighFrequencyMethod).ToString() + ".Selling : " + ex.Message);
-                 return true;
-             }
+            throw new NotImplementedException();
         }
 
         public bool CancelSelling()
         {
-            double limit = WeightedAverage - WeightedStandardDeviation - MinimalPercentageOfEarning * LastPrice;
-
-            if (LastPrice < limit)
-            {
-                return true;
-            }
-
-            return false;
+            throw new NotImplementedException();
         }
 
         public bool CancelBuying()
         {
-            double limit = WeightedAverage + WeightedStandardDeviation + MinimalPercentageOfEarning * LastPrice;
-
-            if (LastPrice > limit)
-            {
-                return true;
-            }
-
-            return false;
+            throw new NotImplementedException();
         }
 
         public void CancelledSelling()
         {
-               
+           
         }
 
         public void CancelledBuying()
         {
-
+            
         }
 
         public double GetVolumeToBuy()
@@ -193,16 +124,16 @@ namespace KrakenService.MarketAnalysis
             //Calculate volume to sell
 
             //Check if percentage not null
-            if (PercentageOfFund != null && PercentageOfFund != 0 )
+            if (PercentageOfFund != null && PercentageOfFund != 0)
             {
                 // calculate the percentage of the total balance to invest
                 VolumeToSell = CurrentBalance.TotalBTC * (double)PercentageOfFund;
 
                 // Check if not superior to the curreny balance of euro
-                if (VolumeToSell  > CurrentBalance.BTC)
+                if (VolumeToSell > CurrentBalance.BTC)
                 {
                     // return current euro balance if yes
-                    VolumeToBuy = CurrentBalance.BTC;
+                    VolumeToSell = CurrentBalance.BTC;
                 }
             }
             else
@@ -228,5 +159,85 @@ namespace KrakenService.MarketAnalysis
 
             return PriceToSellProfit;
         }
+        #endregion
+
+        #region method specific OrderBookAnalysed
+
+        public void InitializeOrderBook()
+        {
+              DbOrderBook = new MySqlIdentityDbContext();
+              OrderBookIndexesPlay = true;
+              Task.Run(() => GetOrderBookIndexesLoop());
+        }
+
+        public void GetOrderBookIndexesLoop()
+        {
+            while(OrderBookIndexesPlay)
+            {
+                try
+                {
+                    CalculateOrderBookIndexes();                   
+                } 
+                catch(Exception ex)
+                {
+                    // ADD LOGGER
+                }
+
+                Thread.Sleep(5000);
+            }
+        }
+
+        public double CalculateOrderBookIndexes()
+        {
+            OrdersBook = recorder.ListOfCurrentOrder;
+            try
+            {
+                double LastLowerAsk = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "ask").OrderBy(a => a.Price).FirstOrDefault().Price);
+                double LastHigherAsk = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "ask").OrderByDescending(a => a.Price).FirstOrDefault().Price);
+                double LastHigherBid = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "bid").OrderByDescending(a => a.Price).FirstOrDefault().Price);
+                double LastLowerBid = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "bid").OrderBy(a => a.Price).FirstOrDefault().Price);
+                double SumVolumeBid = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "bid").Sum(a => a.Volume));
+                double SumVolumeAsk = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "ask").Sum(a => a.Volume));
+                double BidDepth = LastHigherBid - LastLowerBid;
+                double AskDepth = LastHigherAsk - LastLowerAsk;
+                LastMiddleQuote = (LastHigherBid + LastLowerAsk) / 2;
+                double BidDepthPercentage = BidDepth / LastMiddleQuote;
+                double AskDepthPercentage = AskDepth / LastMiddleQuote;
+
+                //record the Order book analysied data
+
+                List<OrderBookAnalysedData> list = new List<OrderBookAnalysedData>();
+                Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+
+                orderBookAnalysedData = new OrderBookAnalysedData()
+                {
+                    UnixTimestamp = unixTimestamp,
+                    Timestamp = DateTime.UtcNow,
+                    LowerAsk = LastLowerAsk,
+                    LowerBid = LastLowerBid,
+                    HigherAsk = LastHigherAsk,
+                    HigherBid = LastHigherBid,
+                    AskDepth = AskDepth,
+                    AskVolume = SumVolumeAsk,
+                    BidDepth = BidDepth,
+                    BidVolume = SumVolumeBid,
+                    DepthRatio = BidDepth / AskDepth,
+                    VolumeRatio = SumVolumeBid / SumVolumeAsk
+                };
+                list.Add(orderBookAnalysedData);
+                
+                //register in mysql database              
+                DbOrderBook.OrderBookDatas.AddRange(list);
+                DbOrderBook.SaveChanges();                
+
+                return LastMiddleQuote;
+            }
+            catch (Exception ex)
+            {
+                return LastMiddleQuote;
+            }
+        }
+        
+        #endregion
     }
 }

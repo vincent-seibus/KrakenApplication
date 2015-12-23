@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace KrakenService.MarketAnalysis
@@ -45,6 +46,14 @@ namespace KrakenService.MarketAnalysis
         #endregion 
 
         public double IndexRSI {get;set;}
+
+        #region property config
+
+        public int Period { get; set; }
+        public int Nperiod { get; set; }
+        public bool RSIPlay { get; set; } 
+
+        #endregion
 
         public RSIMethod(string Pair, Recorder rec, double PercentageOfFund)
             : base(Pair, rec, PercentageOfFund)
@@ -97,12 +106,68 @@ namespace KrakenService.MarketAnalysis
 
         public double GetVolumeToBuy()
         {
-            throw new NotImplementedException();
+            // record balance and price
+            recorder.RecordBalance();
+            CurrentBalance = recorder.CurrentBalance;
+
+            // Get total balance adjusted by price to buy
+            CurrentBalance.TotalBTC = CurrentBalance.BTC + (CurrentBalance.EUR / PriceToBuyProfit);
+            CurrentBalance.TotalEUR = CurrentBalance.EUR + (CurrentBalance.BTC * PriceToBuyProfit);
+
+            //Calculate volume to buy
+
+            //Check if percentage not null
+            if (PercentageOfFund != null && PercentageOfFund != 0)
+            {
+                // calculate the percentage of the total balance to invest
+                VolumeToBuy = CurrentBalance.TotalBTC * (double)PercentageOfFund;
+
+                // Check if not superior to the curreny balance of euro
+                if (VolumeToBuy > (CurrentBalance.EUR / PriceToBuyProfit))
+                {
+                    // return current euro balance if yes
+                    VolumeToBuy = CurrentBalance.EUR / PriceToBuyProfit;
+                }
+            }
+            else
+            {
+                VolumeToBuy = CurrentBalance.EUR / PriceToBuyProfit;
+            }
+
+            return VolumeToBuy;
         }
 
         public double GetVolumeToSell()
         {
-            throw new NotImplementedException();
+            // record balance and price
+            recorder.RecordBalance();
+            CurrentBalance = recorder.CurrentBalance;
+
+            // Get total balance adjusted by price to buy
+            CurrentBalance.TotalBTC = CurrentBalance.BTC + (CurrentBalance.EUR / PriceToSellProfit);
+            CurrentBalance.TotalEUR = CurrentBalance.EUR + (CurrentBalance.BTC * PriceToSellProfit);
+
+            //Calculate volume to sell
+
+            //Check if percentage not null
+            if (PercentageOfFund != null && PercentageOfFund != 0)
+            {
+                // calculate the percentage of the total balance to invest
+                VolumeToSell = CurrentBalance.TotalBTC * (double)PercentageOfFund;
+
+                // Check if not superior to the curreny balance of euro
+                if (VolumeToSell > CurrentBalance.BTC)
+                {
+                    // return current euro balance if yes
+                    VolumeToSell = CurrentBalance.BTC;
+                }
+            }
+            else
+            {
+                VolumeToBuy = CurrentBalance.BTC;
+            }
+
+            return VolumeToBuy;
         }
 
         public double GetPriceToBuy()
@@ -119,9 +184,12 @@ namespace KrakenService.MarketAnalysis
 
         #region method specific RSI
         
-        public void InitializeRSI()
+        public void InitializeRSI(int period, int nperiod)
         {
-            CalculateIndexRSI(recorder.GetLastRowsOHLCDataRecorded(24,30));
+            Nperiod = nperiod;
+            Period = period;
+            RSIPlay = false;
+            Task.Run(() => GetRSILoop(period,nperiod));     
         }
 
         public double CalculateIndexRSI(List<OHLCData> listdata)
@@ -138,62 +206,37 @@ namespace KrakenService.MarketAnalysis
             return rsi;
         }
 
-        public double GetLastMiddleQuote()
+        public void GetRSILoop(int period, int nperiod)
         {
-            OrdersBook = recorder.ListOfCurrentOrder;
-            try
+            while (RSIPlay)
             {
-                LastLowerAsk = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "ask").OrderBy(a => a.Price).FirstOrDefault().Price);
-                LastHigherAsk = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "ask").OrderByDescending(a => a.Price).FirstOrDefault().Price);
-                LastHigherBid = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "bid").OrderByDescending(a => a.Price).FirstOrDefault().Price);
-                LastLowerBid = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "bid").OrderBy(a => a.Price).FirstOrDefault().Price);
-                double SumVolumeBid = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "bid").Sum(a => a.Volume));
-                double SumVolumeAsk = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "ask").Sum(a => a.Volume));
-                double BidDepth = LastHigherBid - LastLowerBid;
-                double AskDepth = LastHigherAsk - LastLowerAsk;
-                LastMiddleQuote = (LastHigherBid + LastLowerAsk) / 2;
-                double BidDepthPercentage = BidDepth / LastMiddleQuote;
-                double AskDepthPercentage = AskDepth / LastMiddleQuote;
-
-                //record the Order book analysied data
-                string filepath = CheckFileAndDirectoryOrderBookAnalysis();
-                List<OrderBookAnalysedData> list = new List<OrderBookAnalysedData>();
-                Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-
-                orderBookAnalysedData = new OrderBookAnalysedData()
+                try
                 {
-                    UnixTimestamp = unixTimestamp,
-                    Timestamp = DateTime.UtcNow,
-                    LowerAsk = LastLowerAsk,
-                    LowerBid = LastLowerBid,
-                    HigherAsk = LastHigherAsk,
-                    HigherBid = LastHigherBid,
-                    AskDepth = AskDepth,
-                    AskVolume = SumVolumeAsk,
-                    BidDepth = BidDepth,
-                    BidVolume = SumVolumeBid,
-                    DepthRatio = BidDepth / AskDepth,
-                    VolumeRatio = SumVolumeBid / SumVolumeAsk
-                };
-                list.Add(orderBookAnalysedData);
-
-                using (StreamWriter writer = File.AppendText(filepath))
-                {
-                    var csv = new CsvWriter(writer);
-                    foreach (var item in list)
+                    switch (period)
                     {
-                        csv.WriteRecord(item);
+                        case 30:
+                            var list30 = recorder.ListOfOHLCData30.OrderByDescending(a => a.time).Take(nperiod).ToList();
+                            CalculateIndexRSI(list30);
+                            break;
+                        case 60:
+                            var list60 = recorder.ListOfOHLCData60.OrderByDescending(a => a.time).Take(nperiod).ToList();
+                            CalculateIndexRSI(list60);
+                            break;
+                        case 1440:
+                            var list1440 = recorder.ListOfOHLCData1440.OrderByDescending(a => a.time).Take(nperiod).ToList();
+                            CalculateIndexRSI(list1440);
+                            break;
                     }
                 }
+                catch(Exception ex)
+                {
+                    // ADD LOGGER
+                }
 
-                return LastMiddleQuote;
-            }
-            catch (Exception ex)
-            {
-                return LastMiddleQuote;
+                Thread.Sleep(3000);
             }
         }
-
+      
         #endregion
 
     }

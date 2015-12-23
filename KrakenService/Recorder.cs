@@ -40,7 +40,6 @@ namespace KrakenService
         //orderbook property
         public OrdersBook ordersBook { get; set; }
         public List<OrderOfBook> ListOfCurrentOrder { get; set; }
-        public List<List<OrderOfBook>> OrderBookPerT { get; set; }
 
         // My orders section
         public List<OpenedOrder> OpenedOrders { get; set; }
@@ -63,8 +62,7 @@ namespace KrakenService
             CurrentBalance = new Balance();
             client = new KrakenClient.KrakenClient();
             ListOftradingDatas = new List<TradingData>();
-            ListOfCurrentOrder = new List<OrderOfBook>();
-            OrderBookPerT = new List<List<OrderOfBook>>();
+            ListOfCurrentOrder = new List<OrderOfBook>();       
             ListOfOHLCData1440 = new List<OHLCData>();
             ListOfOHLCData60 = new List<OHLCData>();
             ListOfOHLCData30 = new List<OHLCData>();
@@ -107,7 +105,7 @@ namespace KrakenService
             while (true)
             {
                 sinceOHLCdata = RecordOHLCData(sinceOHLCdata, period);
-                Thread.Sleep(period * 60 * 1000);
+                Thread.Sleep(30000);
             }
         }
 
@@ -317,28 +315,12 @@ namespace KrakenService
         {
             try
             {
-                string filePath = this.CheckFileAndDirectoryOHLCData(period);
-
-                // Check last data registered
-                OHLCData lastdata = GetLastLineOHLCDataRecorded(period);
-                if (lastdata != null && since == null)
-                {
-                    String last = Convert.ToString(lastdata.time, NumberProvider);
-                    String lastgood = last.Replace(".", "");
-                    while (lastgood.Length < 19)
-                    {
-                        lastgood += "0";
-                    }
-
-                    since = Convert.ToInt64(lastgood, NumberProvider);
-                    since = (long)lastdata.time;
-                }
-
+               
                 // Sending rate increase the meter and check if can continue ootherwise stop 4sec;              
                 SRM.RateAddition(2);
 
                 // Get the data from Kraken API
-                OHLCReceived = this.GetOHLCDatas(since, period);
+                OHLCReceived = this.GetOHLCDatas(null, period);
 
                 // null if error in parsing likely due to a error message from API
                 if (OHLCReceived == null)
@@ -360,16 +342,21 @@ namespace KrakenService
 
                     listtemp.Add(td);
                 }
-
-                // Record list in file in function of period
-                using (StreamWriter writer = File.AppendText(filePath))
+             
+                switch(period)
                 {
-                    var csv = new CsvWriter(writer);
-                    foreach (var item in listtemp)
-                    {
-                        csv.WriteRecord(item);
-                    }
-
+                    case 30:
+                        ListOfOHLCData30.Clear();
+                        ListOfOHLCData30 = listtemp;
+                        break;
+                    case 60:
+                        ListOfOHLCData60.Clear();
+                        ListOfOHLCData60 = listtemp;
+                        break;
+                    case 1440:
+                        ListOfOHLCData1440.Clear();
+                        ListOfOHLCData1440 = listtemp;
+                        break;
                 }
 
                 // record last period
@@ -550,6 +537,7 @@ namespace KrakenService
 
         #region Reader
 
+        /*/ Removed the OHLC data reader and recorder
         public OHLCData GetLastLineOHLCDataRecorded(int period)
         {
             OHLCData OHLCLastData = new OHLCData();
@@ -608,6 +596,7 @@ namespace KrakenService
 
             return OHLCLastRows;
         }
+        /*/
 
         public TradingData GetLastTradingRecord()
         {
@@ -722,25 +711,6 @@ namespace KrakenService
                 Directory.CreateDirectory(pathDirectory);
 
             string pathFile = Path.Combine(pathDirectory, "OrdersBook_" + DateTime.Now.Year + DateTime.Now.Month);
-            if (!File.Exists(pathFile))
-            {
-                using (var myFile = File.Create(pathFile))
-                {
-                    // interact with myFile here, it will be disposed automatically
-                }
-            }
-
-            return pathFile;
-        }
-
-        public string CheckFileAndDirectoryOHLCData(int period)
-        {
-            string OHLCInterval = period.ToString();
-            string pathDirectory = Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).ToString(), "OHLCData" + Pair);
-            if (!Directory.Exists(pathDirectory))
-                Directory.CreateDirectory(pathDirectory);
-
-            string pathFile = Path.Combine(pathDirectory, "OHLCData_" + OHLCInterval);
             if (!File.Exists(pathFile))
             {
                 using (var myFile = File.Create(pathFile))
