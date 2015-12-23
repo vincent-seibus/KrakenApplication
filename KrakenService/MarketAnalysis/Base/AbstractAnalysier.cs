@@ -45,9 +45,6 @@ namespace KrakenService.MarketAnalysis
         public double PercentageOfFund { get; set; }
         private double Multiplicateur { get; set; }
         public double MinimalPercentageOfEarning { get; set; } // it is in percent 
-
-
-
      
         public AbstractAnalysier(string i_Pair, Recorder rec, double percentageoffund)
         {
@@ -213,16 +210,7 @@ namespace KrakenService.MarketAnalysis
                     DepthRatio = BidDepth / AskDepth,
                     VolumeRatio = SumVolumeBid / SumVolumeAsk
                 };
-                list.Add(orderBookAnalysedData);
-                
-                using (StreamWriter writer = File.AppendText(filepath))
-                {
-                    var csv = new CsvWriter(writer);
-                    foreach (var item in list)
-                    {
-                        csv.WriteRecord(item);
-                    }                    
-                }
+                list.Add(orderBookAnalysedData);              
 
                 return LastMiddleQuote;
             }

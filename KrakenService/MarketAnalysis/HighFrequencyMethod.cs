@@ -205,7 +205,7 @@ namespace KrakenService.MarketAnalysis
                 if (VolumeToSell  > CurrentBalance.BTC)
                 {
                     // return current euro balance if yes
-                    VolumeToBuy = CurrentBalance.BTC;
+                    VolumeToSell = CurrentBalance.BTC;
                 }
             }
             else

@@ -330,5 +330,23 @@ namespace KrakenService
 
     }
 
+    public enum PlayerState
+    {
+        ToBuy = 0,
+        Buying = 1,
+        Bought = 2,
+        ToSell = 3,
+        Selling = 4,
+        Sold = 5,
+        ToCancel = 6,
+        Cancelling = 7,
+        Cancelled = 8,
+        ToCancelSelling = 9,
+        ToCancelBuying = 10,
+        CancelledSelling = 11,
+        CancelledBuying = 12,
+        Pending = 100,
+    }
+
   
 }

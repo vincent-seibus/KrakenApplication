@@ -578,20 +578,25 @@ namespace KrakenService
         public List<OHLCData> GetLastRowsOHLCDataRecorded(int Rows, int period)
         {
             List<OHLCData> OHLCLastRows = new List<OHLCData>();
-
-            using (StreamReader reader = File.OpenText(CheckFileAndDirectoryOHLCData(period)))
+            string filepath = CheckFileAndDirectoryOHLCData(period);
+            using (StreamReader reader = File.OpenText(filepath))
             {
                 var csv = new CsvReader(reader);
-                var records = csv.GetRecords<OHLCData>();
-                try
+                while (csv.Read())
                 {
-                    OHLCLastRows = records.OrderByDescending(a => a.time).Take(Rows).ToList();
-                }
-                catch (Exception)
-                {
-                    return null;
-                }
+                    try
+                    {
+                        var record = csv.GetRecord<OHLCData>();
+                        OHLCLastRows.Add(record);
+                    }
+                    catch (Exception)
+                    {
+                        continue;
+                    }
+                }           
             }
+                          
+            OHLCLastRows = OHLCLastRows.OrderByDescending(a => a.time).Take(Rows).ToList();        
 
             return OHLCLastRows;
         }

@@ -36,10 +36,12 @@ namespace KrakenApp
              Console.WriteLine(client.GetBalance());
              //Console.ReadKey();
 
-             KrakenService.Recorder rec1 = new KrakenService.Recorder(pair,SRM);
-             //KrakenService.Analysier ana1 = new KrakenService.Analysier(rec1);
-             //KrakenService.Player play1 = new Player(ana1, rec1.Pair,SRM);
-             HighFrequencyMethod ana1 = new HighFrequencyMethod(pair,rec1,0.6);
+             KrakenService.Recorder rec1 = new KrakenService.Recorder(pair, SRM);
+            HighFrequencyMethod ana1 = new HighFrequencyMethod(pair,rec1,0.6);
+             RSIMethod rsi1 = new RSIMethod(pair, rec1, 0.4);
+             rsi1.InitializeRSI();
+
+
              NewPlayer play1 = new NewPlayer(ana1, pair, SRM);
              ana1.intialize(); 
 
