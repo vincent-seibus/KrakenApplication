@@ -25,6 +25,7 @@ namespace KrakenService.KrakenObjects
         public double AskVolume { get; set; }
         public double DepthRatio { get; set; }
         public double VolumeRatio { get; set; }
+        public double? VolumeWeightedRatio { get; set; }
         
         public OrderBookAnalysedData()
         {

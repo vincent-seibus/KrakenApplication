@@ -188,7 +188,7 @@ namespace KrakenService.MarketAnalysis
         {
             Nperiod = nperiod;
             Period = period;
-            RSIPlay = false;
+            RSIPlay = true;
             Task.Run(() => GetRSILoop(period,nperiod));     
         }
 

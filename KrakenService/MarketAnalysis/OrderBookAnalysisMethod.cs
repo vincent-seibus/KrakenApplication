@@ -163,6 +163,9 @@ namespace KrakenService.MarketAnalysis
 
         #region method specific OrderBookAnalysed
 
+        /// <summary>
+        /// Initialisation of the order book analysis. As to be initialise before anything else
+        /// </summary> 
         public void InitializeOrderBook()
         {
               DbOrderBook = new MySqlIdentityDbContext();
@@ -203,6 +206,8 @@ namespace KrakenService.MarketAnalysis
                 LastMiddleQuote = (LastHigherBid + LastLowerAsk) / 2;
                 double BidDepthPercentage = BidDepth / LastMiddleQuote;
                 double AskDepthPercentage = AskDepth / LastMiddleQuote;
+                double VolumeWeightedRatio = (SumVolumeBid / BidDepth) / (SumVolumeAsk / AskDepth);
+
 
                 //record the Order book analysied data
 
@@ -222,7 +227,8 @@ namespace KrakenService.MarketAnalysis
                     BidDepth = BidDepth,
                     BidVolume = SumVolumeBid,
                     DepthRatio = BidDepth / AskDepth,
-                    VolumeRatio = SumVolumeBid / SumVolumeAsk
+                    VolumeRatio = SumVolumeBid / SumVolumeAsk,
+                    VolumeWeightedRatio = VolumeWeightedRatio
                 };
                 list.Add(orderBookAnalysedData);
                 

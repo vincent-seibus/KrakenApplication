@@ -18,7 +18,8 @@ namespace KrakenService.Data
         public MySqlIdentityDbContext()
             : base("MyDbContextConnectionString")
         {
-            Database.SetInitializer<MySqlIdentityDbContext>(new MyDbInitializer());
+           // Database.SetInitializer<MySqlIdentityDbContext>(new MyDbInitializer());
+            Database.SetInitializer<MySqlIdentityDbContext>(null);
         }
 
         public DbSet<TradingData> TradingDatas { get; set; }
@@ -35,7 +36,7 @@ namespace KrakenService.Data
     {
         protected override void Seed(MySqlIdentityDbContext context)
         {
-            // create 3 students to seed the database                       
+            // create entity here if needed during creation      
             base.Seed(context);
         }
     }

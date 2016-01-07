@@ -107,6 +107,71 @@ namespace KrakenService
             return false;
         }
 
+        public bool SellAtMarket()
+        {
+            if (!analysier.Sell())
+            {
+                return false;
+            }
+
+            //SendingRateCheck
+            SRM.RateAddition(1);
+
+            // create the order
+            KrakenOrder order = new KrakenOrder();
+            order.Pair = "XBTEUR";
+            order.Type = "sell";
+            order.OrderType = "market";
+            order.Price = null; // Market price
+            order.Volume = Convert.ToDecimal(analysier.VolumeToSell, NumberProvider);
+
+            Console.WriteLine("Try to sell at market price !!! volume:" + order.Volume);
+            string response = client.AddOrder(order).ToString();
+
+            //Get order id from response
+            // Check response if no error and change status, don't change status otherwise
+            OpenedOrder orderOpened = new OpenedOrder() { OrderType = "market", Type = "sell", Price = 0, Volume = (double)order.Volume };
+            if (GetOrderIdFromResponse(response, orderOpened) != null)
+            {
+                return true;
+            }
+
+            return false;
+                        
+        }
+
+        public bool BuyAtMarket()
+        {
+            if (!analysier.Buy())
+            {
+                return false;
+            }
+
+            //SendingRateCheck
+            SRM.RateAddition(1);
+
+            // create the order
+            KrakenOrder order = new KrakenOrder();
+            order.Pair = "XBTEUR";
+            order.Type = "buy";
+            order.OrderType = "market";
+            order.Price = null; // Market price
+            order.Volume = Convert.ToDecimal(analysier.VolumeToBuy, NumberProvider);
+
+            Console.WriteLine("Try to buy at market price !!! volume:" + order.Volume);
+            string response = client.AddOrder(order).ToString();
+
+            //Get order id from response
+            // Check response if no error and change status, don't change status otherwise
+            OpenedOrder orderOpened = new OpenedOrder() { OrderType = "market", Type = "sell", Price = 0, Volume = (double)order.Volume };
+            if (GetOrderIdFromResponse(response, orderOpened) != null)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         public void Buying()
         {
             if (!analysier.Buying())
@@ -348,5 +413,4 @@ namespace KrakenService
         Pending = 100,
     }
 
-  
 }
