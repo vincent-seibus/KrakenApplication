@@ -18,7 +18,9 @@ namespace KrakenService
     {
         public IAnalysier analysier { get; set; }
         public KrakenClient.KrakenClient client { get; set; }
-        public string Pair { get; set; }     
+        public string Pair { get; set; }
+        public LimitOrMarket BuyAtLimitOrMarket { get; set; } // can be "limit" or "market"
+        public LimitOrMarket SellAtLimitOrMarket { get; set; } // can be "limit" or "market"
 
         // Context property
         public PlayerState playerState { get; set; }
@@ -28,7 +30,7 @@ namespace KrakenService
         // Config property
         private NumberFormatInfo NumberProvider { get; set; }
 
-        public NewPlayer(IAnalysier i_analysier, string i_pair, SendingRateManager srm)
+        public NewPlayer(IAnalysier i_analysier, string i_pair, SendingRateManager srm, LimitOrMarket limitormarket)
         {
             NumberProvider = new NumberFormatInfo();
             NumberProvider.CurrencyDecimalSeparator = ConfigurationManager.AppSettings["CurrencyDecimalSeparator"];
@@ -37,6 +39,8 @@ namespace KrakenService
             analysier = i_analysier;
             client = new KrakenClient.KrakenClient();
             playerState = RetrieveContext();
+            SellAtLimitOrMarket = limitormarket;
+            BuyAtLimitOrMarket = limitormarket;
         }
 
         public bool SellAtLimit()
@@ -172,6 +176,32 @@ namespace KrakenService
             return false;
         }
 
+        public bool Buy()
+        {
+            switch(BuyAtLimitOrMarket)
+            {
+                case LimitOrMarket.market:
+                    return BuyAtMarket();
+                case LimitOrMarket.limit:
+                    return BuyAtLimit();
+            }
+
+            return false;
+        }
+
+        public bool Sell()
+        {
+            switch (SellAtLimitOrMarket)
+            {
+                case LimitOrMarket.market:
+                    return SellAtMarket();
+                case LimitOrMarket.limit:
+                    return SellAtLimit();
+            }
+
+            return false;
+        }
+
         public void Buying()
         {
             if (!analysier.Buying())
@@ -214,7 +244,7 @@ namespace KrakenService
             {
                 // TO BUY ---------------------------
                 case PlayerState.ToBuy:
-                    if (BuyAtLimit())
+                    if (Buy())
                         playerState = PlayerState.Buying;
                     break;
 
@@ -231,7 +261,7 @@ namespace KrakenService
 
                 // TO SELL --------------------------
                 case PlayerState.ToSell:
-                    if (SellAtLimit())
+                    if (Sell())
                         playerState = PlayerState.Selling;
                     break;
 
@@ -411,6 +441,12 @@ namespace KrakenService
         CancelledSelling = 11,
         CancelledBuying = 12,
         Pending = 100,
+    }
+
+    public enum LimitOrMarket
+    {
+        limit,
+        market,
     }
 
 }

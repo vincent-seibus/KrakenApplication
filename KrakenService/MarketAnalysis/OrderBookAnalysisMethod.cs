@@ -28,7 +28,8 @@ namespace KrakenService.MarketAnalysis
         public OrderBookAnalysedData orderBookAnalysedData { get; set; }
         public double LastMiddleQuote { get; set; }
         public MySqlIdentityDbContext DbOrderBook { get; set; }
-
+        public double VolumeWeightedRatioTresholdToBuy { get; set; }
+        public double VolumeWeightedRatioTresholdToSell { get; set; }
         #endregion
 
         public OrderBookAnalysisMethod(string Pair, Recorder rec, double PercentageOfFund)
@@ -40,37 +41,101 @@ namespace KrakenService.MarketAnalysis
         #region Method Interface
         public bool Buy()
         {
-            throw new NotImplementedException();
+            if (orderBookAnalysedData.VolumeWeightedRatio < VolumeWeightedRatioTresholdToBuy)
+            {
+                return false;
+            }
+
+            return true;
+            
         }
 
         public bool Sell()
         {
-            throw new NotImplementedException();
+            if(orderBookAnalysedData.VolumeWeightedRatio > VolumeWeightedRatioTresholdToSell)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         public bool Buying()
         {
-            throw new NotImplementedException();
+            try
+            {
+                if (MyOpenedOrders.Count != 0)
+                {
+                    if (MyOpenedOrders.First().Price > LastPrice)
+                    {
+                        if (!recorder.GetOpenOrders())
+                            return true;
+
+                        var OpenedOrders = recorder.OpenedOrders.Select(a => a.OrderID);
+
+                        if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
+                            return true;
+
+                        return false;
+                    }
+
+                    return true;
+                }
+
+                return false;
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(typeof(HighFrequencyMethod).ToString() + ".Buying : " + ex.Message);
+                return true;
+            }
         }
 
         public bool Selling()
         {
-            throw new NotImplementedException();
+            try
+            {
+                if (MyOpenedOrders.Count != 0)
+                {
+                    if (MyOpenedOrders.First().Price < LastPrice)
+                    {
+                        if (!recorder.GetOpenOrders())
+                            return true;
+
+                        var OpenedOrders = recorder.OpenedOrders.Select(a => a.OrderID);
+
+                        if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
+                            return true;
+
+                        return false;
+                    }
+
+                    return true;
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(typeof(HighFrequencyMethod).ToString() + ".Selling : " + ex.Message);
+                return true;
+            }
         }
 
         public bool CancelSelling()
         {
-            throw new NotImplementedException();
+            return false;
         }
 
         public bool CancelBuying()
         {
-            throw new NotImplementedException();
+            return false;
         }
 
         public void CancelledSelling()
         {
-           
+            
         }
 
         public void CancelledBuying()
@@ -143,20 +208,23 @@ namespace KrakenService.MarketAnalysis
 
             return VolumeToBuy;
         }
-
+            
+        /// <summary>
+        /// No price set as buy and sell at market , 
+        /// </summary>
+        /// <returns> Always 0</returns>
         public double GetPriceToBuy()
         {
-            PriceToBuyProfit = LastMiddleQuote;
-            PriceToBuyStopLoss = 0;
-
+            PriceToBuyProfit = 0;
             return PriceToBuyProfit;
         }
-
+        /// <summary>
+        ///  No price set as buy and sell at market , 
+        /// </summary>
+        /// <returns></returns>
         public double GetPriceToSell()
         {
-            PriceToSellProfit = LastMiddleQuote;
-            PriceToSellStopLoss = 0;
-
+            PriceToSellProfit = 0;
             return PriceToSellProfit;
         }
         #endregion

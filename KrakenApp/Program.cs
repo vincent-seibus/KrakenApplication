@@ -40,7 +40,7 @@ namespace KrakenApp
              RSIMethod rsi1 = new RSIMethod(pair, rec1, 0.4);
              rsi1.InitializeRSI(30, 48);
 
-             NewPlayer play1 = new NewPlayer(ana1, pair, SRM);
+             NewPlayer play1 = new NewPlayer(ana1, pair, SRM,LimitOrMarket.limit);
              ana1.intialize(); 
 
             int i = 0;
