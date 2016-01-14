@@ -37,8 +37,12 @@ namespace KrakenApp
              OrderBookAnalysisMethod orderAna1 = new OrderBookAnalysisMethod(pair, rec1, 0.0);
              orderAna1.InitializeOrderBook();
 
-             RSIMethod rsi1 = new RSIMethod(pair, rec1, 0.4);
-             rsi1.InitializeRSI(30, 48);
+             RSIMethod rsi30min48period = new RSIMethod(pair, rec1, 0);
+             rsi30min48period.InitializeRSI(30, 48);
+             RSIMethod rsi60min48period = new RSIMethod(pair, rec1, 0);
+             rsi30min48period.InitializeRSI(60, 48);
+             RSIMethod rsi1440min14period = new RSIMethod(pair, rec1, 0);
+             rsi30min48period.InitializeRSI(1440, 14);
 
              NewPlayer play1 = new NewPlayer(ana1, pair, SRM,LimitOrMarket.limit);
              ana1.intialize(); 
