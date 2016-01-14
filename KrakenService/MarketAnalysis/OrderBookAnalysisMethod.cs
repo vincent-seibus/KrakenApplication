@@ -251,7 +251,7 @@ namespace KrakenService.MarketAnalysis
                 } 
                 catch(Exception ex)
                 {
-                    // ADD LOGGER
+                    Console.WriteLine("Error : GetOrderBookIndexesLoop method");
                 }
 
                 Thread.Sleep(5000);
@@ -308,6 +308,7 @@ namespace KrakenService.MarketAnalysis
             }
             catch (Exception ex)
             {
+                Console.WriteLine("Error : Calculate orderbookindexes method");
                 return LastMiddleQuote;
             }
         }

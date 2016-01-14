@@ -15,17 +15,28 @@ namespace KrakenService.MarketAnalysis
         public double PriceToBuyProfit { get; set; }
         public double PriceToBuyStopLoss { get; set; }
 
+        #region spécific
+
+        public double WeightedAverage1440min { get; set; }
+        public double WeightedStandardDeviation1440min { get; set; }
+        public double WeightedAverage240min { get; set; }
+        public double WeightedStandardDeviation240min { get; set; }
+        public double WeightedAverage60min { get; set; }
+        public double WeightedStandardDeviation60min { get; set; }
+
+        #endregion 
+
+
         public BollingerMethod(string Pair, Recorder rec, double PercentageOfFund)
             : base(Pair, rec, PercentageOfFund)
             {
                  
                  
             }
-
-
+        
         public bool Buy()
-        {
-            if (WeightedStandardDeviation < (WeightedAverage * MinimalPercentageOfEarning))
+        {            
+            if (LastPrice < (WeightedAverage * WeightedStandardDeviation))
             {
                 GetPriceToBuy();
                 GetVolumeToBuy();
@@ -37,12 +48,6 @@ namespace KrakenService.MarketAnalysis
 
         public bool Sell()
         {
-            // Why you should sell 
-
-            // Because you have BTC 
-
-            // Because the BTC is higher than the average
-
             GetPriceToSell();
             GetVolumeToSell();
             return true;
@@ -105,7 +110,7 @@ namespace KrakenService.MarketAnalysis
 
         public bool CancelSelling()
         {
-            double limit = WeightedAverage - 2 * WeightedStandardDeviation;
+            double limit = WeightedAverage - 4 * WeightedStandardDeviation;
 
             if (LastPrice < limit)
             {
@@ -205,7 +210,7 @@ namespace KrakenService.MarketAnalysis
 
         public double GetPriceToBuy()
         {
-            PriceToBuyProfit = WeightedAverage - WeightedStandardDeviation;
+            PriceToBuyProfit = 0;
             PriceToBuyStopLoss = 0;
 
             return PriceToBuyProfit;
