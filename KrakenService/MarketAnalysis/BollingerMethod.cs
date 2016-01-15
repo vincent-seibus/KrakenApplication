@@ -36,14 +36,14 @@ namespace KrakenService.MarketAnalysis
         
         public bool Buy()
         {            
-            if (LastPrice < (WeightedAverage * WeightedStandardDeviation))
+            if (LastPrice > (WeightedAverage - 2 * WeightedStandardDeviation))
             {
-                GetPriceToBuy();
-                GetVolumeToBuy();
-                return true;
+                return false;
             }
 
-            return false;
+            GetPriceToBuy();
+            GetVolumeToBuy();
+            return true;        
         }
 
         public bool Sell()
@@ -57,53 +57,61 @@ namespace KrakenService.MarketAnalysis
         {
             try
             {
-                if(!recorder.GetOpenOrders())
-                    return true;
+                if (MyOpenedOrders.Count != 0)
+                {
+                    if (MyOpenedOrders.First().Price > LastPrice)
+                    {
+                        if (!recorder.GetOpenOrders())
+                            return true;
 
-                var OpenedOrders = recorder.OpenedOrders.Select(a => a.OrderID);
+                        var OpenedOrders = recorder.OpenedOrders.Select(a => a.OrderID);
 
-                if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
+                        if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
+                            return true;
+
+                        return false;
+                    }
+
                     return true;
-                else
-                    return false;
+                }
+
+                return false;
+
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                Console.WriteLine(typeof(BollingerMethod).ToString() + ".Buying : " + ex.Message);
+                Console.WriteLine(typeof(HighFrequencyMethod).ToString() + ".Buying : " + ex.Message);
                 return true;
             }
         }
 
         public bool Selling()
         {
-            /*/
-            if(MyOpenedOrders.Count == 0)
-            {
-                return false;
-            }
-                       
-
-            if(MyOpenedOrders.First() != null && MyOpenedOrders.First().Price < LastPrice )
-            {
-                
-            }
-            /*/
-
             try
             {
-                if (!recorder.GetOpenOrders())
-                    return true;
+                if (MyOpenedOrders.Count != 0)
+                {
+                    if (MyOpenedOrders.First().Price < LastPrice)
+                    {
+                        if (!recorder.GetOpenOrders())
+                            return true;
 
-                var OpenedOrders = recorder.OpenedOrders.Select(a => a.OrderID);
+                        var OpenedOrders = recorder.OpenedOrders.Select(a => a.OrderID);
 
-                if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
+                        if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
+                            return true;
+
+                        return false;
+                    }
+
                     return true;
-                else
-                    return false;
+                }
+
+                return false;
             }
             catch (Exception ex)
             {
-                Console.WriteLine(typeof(BollingerMethod).ToString() + ".Selling : " + ex.Message);
+                Console.WriteLine(typeof(HighFrequencyMethod).ToString() + ".Selling : " + ex.Message);
                 return true;
             }
         }

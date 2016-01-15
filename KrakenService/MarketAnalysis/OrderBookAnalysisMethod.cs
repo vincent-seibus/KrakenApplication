@@ -41,11 +41,16 @@ namespace KrakenService.MarketAnalysis
         #region Method Interface
         public bool Buy()
         {
+            DbOrderBook = new MySqlIdentityDbContext();
+           orderBookAnalysedData = DbOrderBook.OrderBookDatas.OrderByDescending(a => a.UnixTimestamp).FirstOrDefault();
             if (orderBookAnalysedData.VolumeWeightedRatio < VolumeWeightedRatioTresholdToBuy)
             {
+                
                 return false;
             }
 
+            GetPriceToBuy();
+            GetVolumeToBuy();
             return true;
             
         }
@@ -57,6 +62,8 @@ namespace KrakenService.MarketAnalysis
                 return false;
             }
 
+            GetPriceToSell();
+            GetVolumeToSell();
             return true;
         }
 
@@ -238,6 +245,8 @@ namespace KrakenService.MarketAnalysis
         {
               DbOrderBook = new MySqlIdentityDbContext();
               OrderBookIndexesPlay = true;
+              VolumeWeightedRatioTresholdToBuy = 1.5;
+              VolumeWeightedRatioTresholdToSell = 1.4;
               Task.Run(() => GetOrderBookIndexesLoop());
         }
 
