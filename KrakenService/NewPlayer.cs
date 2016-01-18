@@ -126,6 +126,7 @@ namespace KrakenService
             order.Pair = "XBTEUR";
             order.Type = "sell";
             order.OrderType = "market";
+            order.Userref = analysier.GetType().ToString();
             order.Price = null; // Market price
             order.Volume = Convert.ToDecimal(analysier.VolumeToSell, NumberProvider);
 
@@ -137,6 +138,7 @@ namespace KrakenService
             OpenedOrder orderOpened = new OpenedOrder() { OrderType = "market", Type = "sell", Price = 0, Volume = (double)order.Volume };
             if (GetOrderIdFromResponse(response, orderOpened) != null)
             {
+
                 return true;
             }
 
@@ -159,6 +161,7 @@ namespace KrakenService
             order.Pair = "XBTEUR";
             order.Type = "buy";
             order.OrderType = "market";
+            order.Userref = analysier.GetType().ToString();
             order.Price = null; // Market price
             order.Volume = Convert.ToDecimal(analysier.VolumeToBuy, NumberProvider);
 

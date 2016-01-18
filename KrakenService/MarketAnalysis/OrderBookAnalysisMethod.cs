@@ -149,7 +149,10 @@ namespace KrakenService.MarketAnalysis
         {
             
         }
-
+        /// <summary>
+        /// Set the volume of bitcoin to buy in function of the current balance, the percentage of fund allocate dto this method and the specific rules taht qpply for this method
+        /// </summary>
+        /// <returns>Volume of bitcoin to buy</returns>
         public double GetVolumeToBuy()
         {
             // record balance and price
@@ -179,10 +182,15 @@ namespace KrakenService.MarketAnalysis
             {
                 VolumeToBuy = CurrentBalance.EUR / PriceToBuyProfit;
             }
+            
+
 
             return VolumeToBuy;
         }
-
+        /// <summary>
+        /// Set the volume of bitcoin to sell in function of the current balance, the percentage of fund allocate dto this method and the specific rules taht qpply for this method
+        /// </summary>
+        /// <returns>Volume of bitcoin to sell</returns>
         public double GetVolumeToSell()
         {
             // record balance and price
@@ -215,7 +223,6 @@ namespace KrakenService.MarketAnalysis
 
             return VolumeToBuy;
         }
-            
         /// <summary>
         /// No price set as buy and sell at market , 
         /// </summary>
