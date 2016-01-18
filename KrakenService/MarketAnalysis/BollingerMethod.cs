@@ -118,26 +118,12 @@ namespace KrakenService.MarketAnalysis
 
         public bool CancelSelling()
         {
-            double limit = WeightedAverage - 4 * WeightedStandardDeviation;
-
-            if (LastPrice < limit)
-            {
-                return true;
-            }
-
-            return false;
+           return false;
         }
 
         public bool CancelBuying()
         {
-            double limit = WeightedAverage + 2 * WeightedStandardDeviation;
-
-            if (LastPrice > limit)
-            {
-                return true;
-            }
-
-            return false;
+           return false;
         }
 
         public void CancelledSelling()
