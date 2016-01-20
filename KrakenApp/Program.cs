@@ -32,11 +32,8 @@ namespace KrakenApp
              SendingRateManager SRM = new SendingRateManager();
              KrakenService.Recorder rec1 = new KrakenService.Recorder(pair, SRM);
 
-             HighFrequencyMethod ana1 = new HighFrequencyMethod(pair,rec1,0.6);
-
-             OrderBookAnalysisMethod orderAna1 = new OrderBookAnalysisMethod(pair, rec1, 0.0);
-             orderAna1.InitializeOrderBook();
-
+             //HighFrequencyMethod ana1 = new HighFrequencyMethod(pair,rec1,0.6);
+           
              RSIMethod rsi30min48period = new RSIMethod(pair, rec1, 0);
              rsi30min48period.InitializeRSI(30, 48);
              RSIMethod rsi60min48period = new RSIMethod(pair, rec1, 0);
@@ -44,26 +41,24 @@ namespace KrakenApp
              RSIMethod rsi1440min14period = new RSIMethod(pair, rec1, 0);
              rsi30min48period.InitializeRSI(1440, 14);
 
-             NewPlayer play1 = new NewPlayer(ana1, pair, SRM,LimitOrMarket.limit);
-             ana1.intialize(); 
+             OrderBookAnalysisMethod orderAna1 = new OrderBookAnalysisMethod(pair, rec1, 0.2);
+             orderAna1.InitializeOrderBook();
+
+             NewPlayer play1 = new NewPlayer(orderAna1, pair, SRM, LimitOrMarket.market);
+             orderAna1.intialize(); 
 
             int i = 0;
             while(i < 40)
             {
                 
                 Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-                HTMLUpdate("DateTime", unixTimestamp.ToString());
-                HTMLUpdate("LastPrice", ana1.LastPrice.ToString());
-          
-
+               
                 Thread.Sleep(1000);
                 Console.WriteLine("--------------------------------------");
                 Console.WriteLine("Last Middle Quote:" + orderAna1.LastMiddleQuote);
-                Console.WriteLine("Last Trade price:" + ana1.LastPrice);                
-                Console.WriteLine("Average : " + ana1.WeightedAverage);
-                Console.WriteLine("Ecart Type : " + ana1.WeightedStandardDeviation);
+                Console.WriteLine("Last Trade price:" + orderAna1.LastPrice);
                 Console.WriteLine("BTC : " + rec1.CurrentBalance.BTC + "; EURO : " + rec1.CurrentBalance.EUR);
-                Console.WriteLine("Player state :" + play1.playerState + " ; minimal earning required: " + ana1.MinimalPercentageOfEarning);
+                Console.WriteLine("Player state :" + play1.playerState + " ; minimal earning required: " + orderAna1.MinimalPercentageOfEarning);
                 i++;
             }
             Console.WriteLine("--------------------------------------");
@@ -71,21 +66,17 @@ namespace KrakenApp
 
             while(true)
             {
-                Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-                HTMLUpdate("DateTime", unixTimestamp.ToString());
-                HTMLUpdate("LastPrice", ana1.LastPrice.ToString());
-                HTMLUpdate("LastMiddleQuote", orderAna1.LastMiddleQuote.ToString());              
+                Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;                       
 
                 play1.Play();              
                 Console.WriteLine("--------------------------------------");
                 Console.WriteLine("Player Status :" + play1.playerState);
                 Console.WriteLine("Last Middle Quote:" + orderAna1.LastMiddleQuote);
-                Console.WriteLine("Last Trade price:" + ana1.LastPrice);
+                Console.WriteLine("Last Trade price:" + orderAna1.LastPrice);
                 Console.WriteLine("Opened Order:");
-                Console.WriteLine("Average : " + ana1.WeightedAverage);
-                Console.WriteLine("Ecart Type : " + ana1.WeightedStandardDeviation);
+                Console.WriteLine("VolumeWeightedRatio : " + orderAna1.orderBookAnalysedData.VolumeWeightedRatio);          
                 Console.WriteLine("BTC : " + rec1.CurrentBalance.BTC + "; EURO : " + rec1.CurrentBalance.EUR);
-                Console.WriteLine("minimal earning required: " + ana1.MinimalPercentageOfEarning);
+                Console.WriteLine("minimal earning required: " + orderAna1.MinimalPercentageOfEarning);
                 Thread.Sleep(2000);
             }       
            
