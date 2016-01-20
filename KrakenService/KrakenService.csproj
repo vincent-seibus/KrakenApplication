@@ -75,6 +75,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\Configuration.cs" />
+    <Compile Include="Data\Position.cs" />
     <Compile Include="KrakenObjects\OrderBookAnalysedData.cs" />
     <Compile Include="MarketAnalysis\Base\AbstractAnalysier.cs" />
     <Compile Include="MarketAnalysis\BollingerMethod.cs" />

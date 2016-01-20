@@ -62,6 +62,8 @@ namespace KrakenService.MarketAnalysis
                 return false;
             }
 
+            
+
             GetPriceToSell();
             GetVolumeToSell();
             return true;
