@@ -12,6 +12,7 @@ using System.Security.Cryptography;
 using Takenet.Library.RateLimiting;
 using System.Globalization;
 using Newtonsoft.Json.Linq;
+using System.Security.Cryptography.X509Certificates;
 
 namespace KrakenClient
 {
@@ -64,7 +65,10 @@ namespace KrakenClient
             HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(address);
             webRequest.ContentType = "application/x-www-form-urlencoded";
             webRequest.Method = "POST";
-
+            webRequest.ServerCertificateValidationCallback = delegate(Object obj, X509Certificate certificate, X509Chain chain, System.Net.Security.SslPolicyErrors errors)
+            {
+                return true;
+            }; 
 
             if (props != null)
             {
@@ -136,7 +140,10 @@ namespace KrakenClient
             webRequest.ContentType = "application/x-www-form-urlencoded";
             webRequest.Method = "POST";
             webRequest.Headers.Add("API-Key", _key);
-
+            webRequest.ServerCertificateValidationCallback = delegate(Object obj, X509Certificate certificate, X509Chain chain, System.Net.Security.SslPolicyErrors errors)
+            {
+                return true;
+            }; 
             
             byte[] base64DecodedSecred = Convert.FromBase64String(_secret);
 
