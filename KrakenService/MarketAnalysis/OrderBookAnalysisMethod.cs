@@ -171,8 +171,8 @@ namespace KrakenService.MarketAnalysis
             CurrentBalance = recorder.CurrentBalance;
 
             // Get total balance adjusted by price to buy
-            CurrentBalance.TotalBTC = CurrentBalance.BTC + (CurrentBalance.EUR / PriceToBuyProfit);
-            CurrentBalance.TotalEUR = CurrentBalance.EUR + (CurrentBalance.BTC * PriceToBuyProfit);
+            CurrentBalance.TotalBTC = CurrentBalance.BTC + (CurrentBalance.EUR / LastPrice);
+            CurrentBalance.TotalEUR = CurrentBalance.EUR + (CurrentBalance.BTC * LastPrice);
 
             //Calculate volume to buy
 
@@ -183,10 +183,10 @@ namespace KrakenService.MarketAnalysis
                 VolumeToBuy = CurrentBalance.TotalBTC * (double)PercentageOfFund;
 
                 // Check if not superior to the curreny balance of euro
-                if (VolumeToBuy > (CurrentBalance.EUR / PriceToBuyProfit))
+                if (VolumeToBuy > (CurrentBalance.EUR / LastPrice))
                 {
                     // return current euro balance if yes
-                    VolumeToBuy = CurrentBalance.EUR / PriceToBuyProfit;
+                    VolumeToBuy = CurrentBalance.EUR / LastPrice;
                 }
             }
             else
@@ -209,8 +209,8 @@ namespace KrakenService.MarketAnalysis
             CurrentBalance = recorder.CurrentBalance;
 
             // Get total balance adjusted by price to buy
-            CurrentBalance.TotalBTC = CurrentBalance.BTC + (CurrentBalance.EUR / PriceToSellProfit);
-            CurrentBalance.TotalEUR = CurrentBalance.EUR + (CurrentBalance.BTC * PriceToSellProfit);
+            CurrentBalance.TotalBTC = CurrentBalance.BTC + (CurrentBalance.EUR / LastPrice);
+            CurrentBalance.TotalEUR = CurrentBalance.EUR + (CurrentBalance.BTC * LastPrice);
 
             //Calculate volume to sell
 
