@@ -285,7 +285,7 @@ namespace KrakenService
                 ListOftradingDatas = ListOftradingDatas.Where(a => a.UnixTime > (unixTimestamp - IntervalInSecond)).ToList();
 
                 //register in csv file
-                using (StreamWriter writer = File.AppendText(filePath))
+               /*/ using (StreamWriter writer = File.AppendText(filePath))
                 {
                     var csv = new CsvWriter(writer);
                     foreach (var item in listtemp)
@@ -293,6 +293,7 @@ namespace KrakenService
                         csv.WriteRecord(item);
                     }
                 }
+                * /*/
 
                 //register in mysql database
                 MySqlIdentityDbContext db = new MySqlIdentityDbContext();
@@ -424,11 +425,13 @@ namespace KrakenService
                     ListOfCurrentOrder.Add(co);
                 }
 
+                /*/
                 using (StreamWriter writer = File.AppendText(filePath))
                 {
                     var csv = new CsvWriter(writer);
                     csv.WriteRecords(ListOfCurrentOrder);
                 }
+                /*/
 
                 //OrderBookPerT.Add(ListOfCurrentOrder);
             }
@@ -450,12 +453,14 @@ namespace KrakenService
                 // EMpty the field before filling it 
                 System.IO.File.WriteAllText(filePathLast, string.Empty);
 
-                // Record last trade data - over written by new data each time
+                // Record last trade data - over written by new data each time               
+                /*/
                 using (StreamWriter writer = new StreamWriter(File.OpenWrite(filePathLast)))
                 {
                     var csv = new CsvWriter(writer);
                     csv.WriteRecords(ListOftradingDatasFiltered);
                 }
+                 * /*/
             }
             catch (Exception ex)
             {

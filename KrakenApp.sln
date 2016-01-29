@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KrakenClient", "KrakenClien
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTestKraken", "UnitTestKraken\UnitTestKraken.csproj", "{FE647A8A-D983-411A-A6E7-56D50E88CAAE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TradeWebApp", "TradeWebApp\TradeWebApp.csproj", "{04FA91ED-CC3E-4B63-953F-EAC9B53379C0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{FE647A8A-D983-411A-A6E7-56D50E88CAAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FE647A8A-D983-411A-A6E7-56D50E88CAAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FE647A8A-D983-411A-A6E7-56D50E88CAAE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{04FA91ED-CC3E-4B63-953F-EAC9B53379C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{04FA91ED-CC3E-4B63-953F-EAC9B53379C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{04FA91ED-CC3E-4B63-953F-EAC9B53379C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{04FA91ED-CC3E-4B63-953F-EAC9B53379C0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
