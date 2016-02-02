@@ -74,7 +74,6 @@ namespace KrakenService
             // Start recording 
             GetOpenOrders();
             RecordBalance();
-            GetLastTradingDataRecorded();
             Task.Run(() => GetRecordsRegularly());
 
             Thread.Sleep(2000);
@@ -244,13 +243,7 @@ namespace KrakenService
                     since = Convert.ToInt64(lastgood, NumberProvider);
                 }
 
-                if (ListOftradingDatas.Count == 0 && ListOftradingDatasFiltered != null && ListOftradingDatasFiltered.Count > 0)
-                {
-                    ListOftradingDatas = ListOftradingDatasFiltered;
-                }
-
-                string filePath = CheckFileAndDirectoryTradingData();
-
+                
                 // Sending rate increase the meter and check if can continue ootherwise stop 4sec;               
                 SRM.RateAddition(2);
                 HTMLUpdate("LastAction", "RecordRecentTradeData");
@@ -280,29 +273,14 @@ namespace KrakenService
                 }
 
                 // add new records from API and Filtered also the ListOftradingDatas to get only 86400;
-                ListOftradingDatas.AddRange(listtemp);
                 Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-                ListOftradingDatas = ListOftradingDatas.Where(a => a.UnixTime > (unixTimestamp - IntervalInSecond)).ToList();
-
-                //register in csv file
-               /*/ using (StreamWriter writer = File.AppendText(filePath))
-                {
-                    var csv = new CsvWriter(writer);
-                    foreach (var item in listtemp)
-                    {
-                        csv.WriteRecord(item);
-                    }
-                }
-                * /*/
-
+    
                 //register in mysql database
                 MySqlIdentityDbContext db = new MySqlIdentityDbContext();
                 db.TradingDatas.AddRange(listtemp);
                 db.SaveChanges();
                 db.Dispose();
 
-                //record last filtered data in file
-                RecordLastTradingData();
                 return since;
             }
             catch (Exception ex)
@@ -375,8 +353,7 @@ namespace KrakenService
         {
             try
             {
-                string filePath = CheckFileAndDirectoryOrdersBook();
-
+               
                 // Sending rate increase the meter and check if can continue ootherwise stop 4sec;
                 SRM.RateAddition(2);
                 HTMLUpdate("LastAction", "RecordOrderBook");
@@ -425,15 +402,7 @@ namespace KrakenService
                     ListOfCurrentOrder.Add(co);
                 }
 
-                /*/
-                using (StreamWriter writer = File.AppendText(filePath))
-                {
-                    var csv = new CsvWriter(writer);
-                    csv.WriteRecords(ListOfCurrentOrder);
-                }
-                /*/
-
-                //OrderBookPerT.Add(ListOfCurrentOrder);
+               
             }
             catch (Exception ex)
             {
@@ -605,64 +574,18 @@ namespace KrakenService
 
         public TradingData GetLastTradingRecord()
         {
-            List<TradingData> TradingDataList = new List<TradingData>();
-            TradingData LastTradingData = new TradingData();
-
-            using (StreamReader reader = File.OpenText(CheckFileAndDirectoryLastTradingData()))
+            TradingData LastTradingData = new TradingData();            
+            try
             {
-                try
-                {
-                    var csv = new CsvReader(reader);
-                    while (csv.Read())
-                    {
-                        try
-                        {
-                            var record = csv.GetRecord<TradingData>();
-                            TradingDataList.Add(record);
-                        }
-                        catch (Exception)
-                        {
-
-                        }
-                    }
-
-                    LastTradingData = TradingDataList.OrderByDescending(a => a.UnixTime).FirstOrDefault();
-                }
-                catch (Exception)
-                {
-                    return null;
-                }
+                MySqlIdentityDbContext db = new MySqlIdentityDbContext();
+                LastTradingData = db.TradingDatas.OrderByDescending(a => a.UnixTime).FirstOrDefault();
             }
-
+            catch (Exception)
+            {
+                return null;
+            }
+            
             return LastTradingData;
-        }
-
-        public void GetLastTradingDataRecorded()
-        {
-            ListOftradingDatasFiltered = new List<TradingData>();
-            using (StreamReader reader = File.OpenText(CheckFileAndDirectoryLastTradingData()))
-            {
-                try
-                {
-                    var csv = new CsvReader(reader);
-                    while (csv.Read())
-                    {
-                        try
-                        {
-                            var record = csv.GetRecord<TradingData>();
-                            ListOftradingDatasFiltered.Add(record);
-                        }
-                        catch (Exception)
-                        {
-
-                        }
-                    }
-                }
-                catch (Exception)
-                {
-
-                }
-            }
         }
 
         #endregion

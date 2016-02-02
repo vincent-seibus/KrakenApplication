@@ -5,7 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Web;
+using System.Web.Caching;
+using TradeWebApp.Models;
 
 namespace TradeWebApp
 {
@@ -15,6 +18,8 @@ namespace TradeWebApp
         {
             // The pair we will work on
             string pair = "XXBTZEUR";
+            IsPlaying = false;
+            IsStopping = false;
 
             SendingRateManager SRM = new SendingRateManager();
             KrakenService.Recorder rec1 = new KrakenService.Recorder(pair, SRM);
@@ -34,38 +39,67 @@ namespace TradeWebApp
             NewPlayer play1 = new NewPlayer(orderAna1, pair, SRM, LimitOrMarket.market);
             orderAna1.intialize();
 
+            recorder = rec1;
+            orderbook = orderAna1;
+            player = play1;
+
             int i = 0;
             while (i < 40)
             {
-
                 Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-
-                Thread.Sleep(1000);
-                Console.WriteLine("--------------------------------------");
-                Console.WriteLine("Last Middle Quote:" + orderAna1.LastMiddleQuote);
-                Console.WriteLine("Last Trade price:" + orderAna1.LastPrice);
-                Console.WriteLine("BTC : " + rec1.CurrentBalance.BTC + "; EURO : " + rec1.CurrentBalance.EUR);
-                Console.WriteLine("Player state :" + play1.playerState + " ; minimal earning required: " + orderAna1.MinimalPercentageOfEarning);
+                Thread.Sleep(1000);              
                 i++;
             }
-            Console.WriteLine("--------------------------------------");
-            Console.ReadKey();
 
-            while (true)
-            {
-                Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-
-                play1.Play();
-                Console.WriteLine("--------------------------------------");
-                Console.WriteLine("Player Status :" + play1.playerState);
-                Console.WriteLine("Last Middle Quote:" + orderAna1.LastMiddleQuote);
-                Console.WriteLine("Last Trade price:" + orderAna1.LastPrice);
-                Console.WriteLine("Opened Order:");
-                Console.WriteLine("VolumeWeightedRatio : " + orderAna1.orderBookAnalysedData.VolumeWeightedRatio);
-                Console.WriteLine("BTC : " + rec1.CurrentBalance.BTC + "; EURO : " + rec1.CurrentBalance.EUR);
-                Console.WriteLine("minimal earning required: " + orderAna1.MinimalPercentageOfEarning);
-                Thread.Sleep(2000);
-            }       
+            Task.Run(() => PlayerLoop(play1));
         }
+
+        public static bool IsPlaying { get; set; }
+        public static bool IsStopping { get; set; }
+
+        public static void Start()
+        {
+            IsPlaying = true;
+        }
+
+        public static void Pause()
+        {
+            IsPlaying = false;
+        }
+
+        public static void Stop()
+        {
+            IsStopping = true;
+        }
+
+        public static void PlayerLoop(NewPlayer player)
+        {
+            Dashboard dashboard = new Dashboard();           
+             while (!IsStopping)
+            {
+                if (IsPlaying)
+                {
+                    Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+                    player.Play();
+                }
+                
+                
+                 dashboard.LastMiddleQuote = orderbook.LastMiddleQuote ;
+                dashboard.LastPrice = orderbook.LastPrice ;
+                dashboard.VolumeWeightedRatio = orderbook.orderBookAnalysedData.VolumeWeightedRatio ?? 0.0;
+                dashboard.PlayerState = player.playerState;
+                HttpRuntime.Cache.Add("Dashboard", dashboard, null, Cache.NoAbsoluteExpiration, new TimeSpan(0, 1, 0), CacheItemPriority.Normal, null);               
+                Thread.Sleep(2000);
+            }
+        }
+
+        #region Read variable
+
+        public static KrakenService.Recorder recorder { get; set; }
+        public static NewPlayer player { get; set; }
+        public static OrderBookAnalysisMethod orderbook { get; set; }
+
+        #endregion
+
     }
 }
