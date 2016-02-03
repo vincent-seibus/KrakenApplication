@@ -88,6 +88,8 @@ namespace TradeWebApp
                 dashboard.LastPrice = orderbook.LastPrice ;
                 dashboard.VolumeWeightedRatio = orderbook.orderBookAnalysedData.VolumeWeightedRatio ?? 0.0;
                 dashboard.PlayerState = player.playerState;
+                dashboard.BalanceBtc = orderbook.CurrentBalance.BTC;
+                dashboard.BalanceEuro = orderbook.CurrentBalance.EUR;
                 HttpRuntime.Cache.Add("Dashboard", dashboard, null, Cache.NoAbsoluteExpiration, new TimeSpan(0, 1, 0), CacheItemPriority.Normal, null);               
                 Thread.Sleep(2000);
             }
