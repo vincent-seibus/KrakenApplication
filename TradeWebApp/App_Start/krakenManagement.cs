@@ -75,7 +75,7 @@ namespace TradeWebApp
         public static void PlayerLoop(NewPlayer player)
         {
             Dashboard dashboard = new Dashboard();           
-             while (!IsStopping)
+            while (!IsStopping)
             {
                 if (IsPlaying)
                 {
@@ -90,9 +90,26 @@ namespace TradeWebApp
                 dashboard.PlayerState = player.playerState;
                 dashboard.BalanceBtc = orderbook.CurrentBalance.BTC;
                 dashboard.BalanceEuro = orderbook.CurrentBalance.EUR;
+                dashboard.IsPlaying = IsPlaying;
+                dashboard.IsStopping = IsStopping;
                 HttpRuntime.Cache.Add("Dashboard", dashboard, null, Cache.NoAbsoluteExpiration, new TimeSpan(0, 1, 0), CacheItemPriority.Normal, null);               
                 Thread.Sleep(2000);
             }
+        }
+
+        public static object ChangePlayerState(int PlayerStateId)
+        {
+            try
+            {
+                PlayerState playerstate = (PlayerState)PlayerStateId;
+                player.playerState = playerstate;
+                return new { error = "" ,  player.playerState };
+            }
+            catch(Exception ex)
+            {
+                return new { error = ex.Message, PlayerState = player.playerState };
+            }
+            
         }
 
         #region Read variable

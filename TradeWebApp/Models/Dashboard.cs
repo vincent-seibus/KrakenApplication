@@ -17,5 +17,8 @@ namespace TradeWebApp.Models
         public double VolumeWeightedRatio { get; set; }
         public double BalanceEuro { get; set; }
         public double BalanceBtc { get; set; }
+        public bool IsPlaying { get; set; }
+        public bool IsStopping { get; set; }
+        
     }
 }

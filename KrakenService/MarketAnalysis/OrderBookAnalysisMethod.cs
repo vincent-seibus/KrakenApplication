@@ -84,8 +84,6 @@ namespace KrakenService.MarketAnalysis
             {
                 if (MyOpenedOrders.Count != 0)
                 {
-                    if (MyOpenedOrders.First().Price > LastPrice)
-                    {
                         if (!recorder.GetOpenOrders())
                             return true;
 
@@ -94,10 +92,7 @@ namespace KrakenService.MarketAnalysis
                         if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
                             return true;
 
-                        return false;
-                    }
-
-                    return true;
+                        return false;             
                 }
 
                 return false;
@@ -116,8 +111,7 @@ namespace KrakenService.MarketAnalysis
             {
                 if (MyOpenedOrders.Count != 0)
                 {
-                    if (MyOpenedOrders.First().Price < LastPrice)
-                    {
+                   
                         if (!recorder.GetOpenOrders())
                             return true;
 
@@ -126,10 +120,7 @@ namespace KrakenService.MarketAnalysis
                         if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
                             return true;
 
-                        return false;
-                    }
-
-                    return true;
+                        return false;                   
                 }
 
                 return false;

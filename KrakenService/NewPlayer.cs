@@ -161,7 +161,7 @@ namespace KrakenService
             order.Pair = "XBTEUR";
             order.Type = "buy";
             order.OrderType = "market";
-            order.Userref = analysier.GetType().ToString();
+            //order.Userref = analysier.GetType().ToString();
             order.Price = null; // Market price
             order.Volume = Convert.ToDecimal(analysier.VolumeToBuy, NumberProvider);
 
