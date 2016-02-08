@@ -92,6 +92,8 @@ namespace KrakenService.MarketAnalysis
                         if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
                             return true;
 
+                        CurrentBalance = recorder.CurrentBalance;           
+
                         return false;             
                 }
 
@@ -119,6 +121,8 @@ namespace KrakenService.MarketAnalysis
 
                         if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
                             return true;
+
+                        CurrentBalance = recorder.CurrentBalance;      
 
                         return false;                   
                 }
