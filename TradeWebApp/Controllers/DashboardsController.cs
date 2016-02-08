@@ -26,62 +26,49 @@ namespace TradeWebApp.Controllers
         // GET: api/Dashboards/5
         [Route("api/Dashboards/Start")]
         [AcceptVerbs("GET")]
-        public Dashboard Start()
+        public object Start()
         {
             krakenManagement.Start();
-            Dashboard dashboard = new Dashboard();
-            Cache cache = new Cache();
-            dashboard = (Dashboard)HttpRuntime.Cache.Get("Dashboard");
-            return dashboard;
+            return new { error = "", message = "Player has been started"};       
         }
 
         // GET: api/Dashboards/5
         [Route("api/Dashboards/Pause")]
         [AcceptVerbs("GET")]
-        public Dashboard Pause()
+        public object Pause()
         {
             krakenManagement.Pause();
-            Dashboard dashboard = new Dashboard();
-            Cache cache = new Cache();
-            dashboard = (Dashboard)HttpRuntime.Cache.Get("Dashboard");
-            return dashboard;
+            return new { error = "", message = "Player has been paused" };         
         }
 
         // GET: api/Dashboards/5
         [Route("api/Dashboards/Stop")]
         [AcceptVerbs("GET")]
-        public Dashboard Stop()
+        public object Stop()
         {
-            krakenManagement.Stop();
-            Dashboard dashboard = new Dashboard();
-            Cache cache = new Cache();
-            dashboard = (Dashboard)HttpRuntime.Cache.Get("Dashboard");
-            return dashboard;
+            krakenManagement.Stop();            
+            return new { error = "", message = "Player has been stopped" };
         }
-
 
         // GET: api/Dashboards/5
         [Route("api/Dashboards/Init")]
         [AcceptVerbs("GET")]
-        public Dashboard Init()
+        public object Init()
         {
             Task.Run(() => krakenManagement.Initialize());
-            Dashboard dashboard = new Dashboard();
-            Cache cache = new Cache();
-            dashboard = (Dashboard)HttpRuntime.Cache.Get("Dashboard");
-            return dashboard;
+            return new { error = "", message = "Initialization in progress..." };
         }
 
         // GET: api/Dashboards/5
-        [Route("api/Dashboards/PlayerState")]
+        [Route("api/Dashboards/InitTime")]
         [AcceptVerbs("GET")]
-        public Dashboard PlayerStateChange(int id)
+        public object InitTime()
         {
-            krakenManagement.ChangePlayerState(id);
-            Dashboard dashboard = new Dashboard();
-            Cache cache = new Cache();
-            dashboard = (Dashboard)HttpRuntime.Cache.Get("Dashboard");
-            return dashboard;
+            int i = krakenManagement.InitializeTime;
+            if (i < 40)
+                return new { error  = "", message = "Initialization in progress...", time = i };
+            else
+              return new { error = "", message = "Initialization finished", time = i };
         }
 
 

@@ -19,7 +19,7 @@ namespace TradeWebApp
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
-            krakenManagement.Initialize();
+            Task.Run(() => krakenManagement.Initialize());
         }
     }
 }

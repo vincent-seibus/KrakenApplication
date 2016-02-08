@@ -14,12 +14,27 @@ namespace TradeWebApp
 {
     public static class krakenManagement
     {
+        // property config
+        public static double FundPercentage { get; set; }
+
+        // Property context
+        public static int InitializeTime { get; set; }
+        public static bool IsPlaying { get; set; }
+        public static bool IsStopping { get; set; }
+        public static bool IsStopped { get; set; }
+        public static bool IsPaused { get; set; }
+        public static bool IsStarted { get; set; }
+
+
         public static void Initialize()
         {
             // The pair we will work on
             string pair = "XXBTZEUR";
             IsPlaying = false;
             IsStopping = false;
+            IsStopped = false;
+            IsStarted = false;
+            IsPaused = false;
 
             SendingRateManager SRM = new SendingRateManager();
             KrakenService.Recorder rec1 = new KrakenService.Recorder(pair, SRM);
@@ -33,7 +48,10 @@ namespace TradeWebApp
             RSIMethod rsi1440min14period = new RSIMethod(pair, rec1, 0);
             rsi30min48period.InitializeRSI(1440, 14);
 
-            OrderBookAnalysisMethod orderAna1 = new OrderBookAnalysisMethod(pair, rec1, 0.2);
+            if (FundPercentage == null || FundPercentage == 0)
+                FundPercentage = 1;
+
+            OrderBookAnalysisMethod orderAna1 = new OrderBookAnalysisMethod(pair, rec1, FundPercentage);
             orderAna1.InitializeOrderBook();
 
             NewPlayer play1 = new NewPlayer(orderAna1, pair, SRM, LimitOrMarket.market);
@@ -43,22 +61,26 @@ namespace TradeWebApp
             orderbook = orderAna1;
             player = play1;
 
-            int i = 0;
-            while (i < 40)
+            InitializeTime = 0;
+            while (InitializeTime < 40)
             {
                 Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-                Thread.Sleep(1000);              
-                i++;
+                Thread.Sleep(1000);
+                InitializeTime++;
             }
 
             Task.Run(() => PlayerLoop(play1));
-        }
-
-        public static bool IsPlaying { get; set; }
-        public static bool IsStopping { get; set; }
+        }             
 
         public static void Start()
         {
+            if(IsStopped)
+            {
+                IsStopped = false;
+                IsStopping = false;
+                Task.Run(() => PlayerLoop(player));
+            }
+
             IsPlaying = true;
         }
 
@@ -72,6 +94,8 @@ namespace TradeWebApp
             IsStopping = true;
         }
 
+
+
         public static void PlayerLoop(NewPlayer player)
         {
             Dashboard dashboard = new Dashboard();           
@@ -81,10 +105,18 @@ namespace TradeWebApp
                 {
                     Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
                     player.Play();
+                    IsStarted = true;
+                    IsPaused = false;
                 }
-                
-                
-                 dashboard.LastMiddleQuote = orderbook.LastMiddleQuote ;
+                else
+                {
+                    IsStarted = false;
+                    IsPaused = true;
+                }
+              
+               
+                                
+                dashboard.LastMiddleQuote = orderbook.LastMiddleQuote ;
                 dashboard.LastPrice = orderbook.LastPrice ;
                 dashboard.VolumeWeightedRatio = orderbook.orderBookAnalysedData.VolumeWeightedRatio ?? 0.0;
                 dashboard.PlayerState = player.playerState;
@@ -95,6 +127,9 @@ namespace TradeWebApp
                 HttpRuntime.Cache.Add("Dashboard", dashboard, null, Cache.NoAbsoluteExpiration, new TimeSpan(0, 1, 0), CacheItemPriority.Normal, null);               
                 Thread.Sleep(2000);
             }
+
+            IsStopped = true;
+
         }
 
         public static object ChangePlayerState(int PlayerStateId)
@@ -110,6 +145,19 @@ namespace TradeWebApp
                 return new { error = ex.Message, PlayerState = player.playerState };
             }
             
+        }
+
+        public static void ChangeFundPercentage(double value)
+        {
+            FundPercentage = value;
+            Stop();
+            while(!IsStopped)
+            {
+                Stop();
+                Thread.Sleep(100);
+            }
+
+            Task.Run(() => PlayerLoop(player));
         }
 
         #region Read variable
