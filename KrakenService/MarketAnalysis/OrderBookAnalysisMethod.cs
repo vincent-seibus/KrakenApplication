@@ -46,8 +46,8 @@ namespace KrakenService.MarketAnalysis
             {
                 DbOrderBook = new MySqlIdentityDbContext();
                 orderBookAnalysedData = DbOrderBook.OrderBookDatas.OrderByDescending(a => a.UnixTimestamp).FirstOrDefault();
-                VolumeWeightedRatioTresholdToBuy = 1.3;
-                if (orderBookAnalysedData.VolumeWeightedRatio < VolumeWeightedRatioTresholdToBuy)
+                VolumeWeightedRatioTresholdToBuy = 1.2;
+                if (orderBookAnalysedData100.EMA < VolumeWeightedRatioTresholdToBuy)
                 {
 
                     return false;
@@ -67,8 +67,8 @@ namespace KrakenService.MarketAnalysis
 
         public bool Sell()
         {
-            VolumeWeightedRatioTresholdToSell = 1.1;
-            if (orderBookAnalysedData.VolumeWeightedRatio > VolumeWeightedRatioTresholdToSell)
+            VolumeWeightedRatioTresholdToSell = 1.0;
+            if (orderBookAnalysedData100.EMA > VolumeWeightedRatioTresholdToSell)
             {
                 return false;
             }

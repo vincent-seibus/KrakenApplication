@@ -20,6 +20,8 @@ namespace TradeWebApp.Models
         public double BalanceBtc { get; set; }
         public bool IsPlaying { get; set; }
         public bool IsStopping { get; set; }
+        public double EMA { get; set; }
+        public double EMA100 { get; set; }
         
     }
 }

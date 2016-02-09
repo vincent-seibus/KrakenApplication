@@ -125,6 +125,8 @@ namespace TradeWebApp
                 dashboard.BalanceEuro = orderbook.CurrentBalance.EUR;
                 dashboard.IsPlaying = IsPlaying;
                 dashboard.IsStopping = IsStopping;
+                dashboard.EMA = orderbook.orderBookAnalysedData.EMA;
+                dashboard.EMA100 = orderbook.orderBookAnalysedData100.EMA;
                 HttpRuntime.Cache.Add("Dashboard", dashboard, null, Cache.NoAbsoluteExpiration, new TimeSpan(0, 1, 0), CacheItemPriority.Normal, null);               
                 Thread.Sleep(2000);
             }
