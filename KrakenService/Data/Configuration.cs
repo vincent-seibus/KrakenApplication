@@ -18,8 +18,8 @@ namespace KrakenService.Data
         public MySqlIdentityDbContext()
             : base("MyDbContextConnectionString")
         {
-           // Database.SetInitializer<MySqlIdentityDbContext>(new MyDbInitializer());
-            Database.SetInitializer<MySqlIdentityDbContext>(null);
+            Database.SetInitializer<MySqlIdentityDbContext>(new MyDbInitializer());
+           // Database.SetInitializer<MySqlIdentityDbContext>(null);
         }
 
         public DbSet<TradingData> TradingDatas { get; set; }

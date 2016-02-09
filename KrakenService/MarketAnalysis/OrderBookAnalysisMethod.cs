@@ -26,6 +26,7 @@ namespace KrakenService.MarketAnalysis
         #region Property Specific
         public bool OrderBookIndexesPlay { get; set; }
         public OrderBookAnalysedData orderBookAnalysedData { get; set; }
+        public OrderBookAnalysedData orderBookAnalysedData100 { get; set; }
         public double LastMiddleQuote { get; set; }
         public MySqlIdentityDbContext DbOrderBook { get; set; }
         public double VolumeWeightedRatioTresholdToBuy { get; set; }
@@ -258,8 +259,8 @@ namespace KrakenService.MarketAnalysis
         {
               DbOrderBook = new MySqlIdentityDbContext();
               OrderBookIndexesPlay = true;
-              VolumeWeightedRatioTresholdToBuy = 1.5;
-              VolumeWeightedRatioTresholdToSell = 1.4;
+              VolumeWeightedRatioTresholdToBuy = 1.7;
+              VolumeWeightedRatioTresholdToSell = 1.5;
               Task.Run(() => GetOrderBookIndexesLoop());
         }
 
@@ -269,7 +270,8 @@ namespace KrakenService.MarketAnalysis
             {
                 try
                 {
-                    CalculateOrderBookIndexes();                   
+                    CalculateOrderBookIndexes();
+                    CalculateOrderBookIndexes100();
                 } 
                 catch(Exception ex)
                 {
@@ -298,6 +300,14 @@ namespace KrakenService.MarketAnalysis
                 double AskDepthPercentage = AskDepth / LastMiddleQuote;
                 double VolumeWeightedRatio = (SumVolumeBid / BidDepth) / (SumVolumeAsk / AskDepth);
 
+                double alpha = 0.1;
+                double? VolumeWeightedRatioEMA = null;
+                var  listEMA = DbOrderBook.OrderBookDatas.OrderByDescending(a => a.UnixTimestamp).Where(a => a.NumberOfOrderInBook == 500).Take(20).Select(a => a.VolumeWeightedRatio).DefaultIfEmpty().ToList();
+                if(listEMA.Count != 0)
+                {
+                     VolumeWeightedRatioEMA = listEMA.Aggregate((ema, nextQuote) => alpha * nextQuote + (1 - alpha) * ema);
+                }
+               
 
                 //record the Order book analysied data
 
@@ -308,6 +318,7 @@ namespace KrakenService.MarketAnalysis
                 {
                     UnixTimestamp = unixTimestamp,
                     Timestamp = DateTime.UtcNow,
+                    /*/
                     LowerAsk = LastLowerAsk,
                     LowerBid = LastLowerBid,
                     HigherAsk = LastHigherAsk,
@@ -318,7 +329,11 @@ namespace KrakenService.MarketAnalysis
                     BidVolume = SumVolumeBid,
                     DepthRatio = BidDepth / AskDepth,
                     VolumeRatio = SumVolumeBid / SumVolumeAsk,
-                    VolumeWeightedRatio = VolumeWeightedRatio
+                     /*/
+                    VolumeWeightedRatio = VolumeWeightedRatio,
+                    NumberOfOrderInBook = 500,
+                    EMA = VolumeWeightedRatioEMA ?? 0
+
                 };
                 list.Add(orderBookAnalysedData);
                 
@@ -330,11 +345,65 @@ namespace KrakenService.MarketAnalysis
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error : Calculate orderbookindexes method");
+                Console.WriteLine("Error : Calculate orderbookindexes method > " + ex.Message);
                 return LastMiddleQuote;
             }
         }
-        
+
+        public double CalculateOrderBookIndexes100()
+        {
+            var OrdersBook100 = recorder.ListOfCurrentOrder;
+            OrdersBook100 = OrdersBook100.Where(a => a.OrderType == "ask").OrderBy(a => a.Price).Take(100).
+                Union(OrdersBook100.Where(a => a.OrderType == "bid").OrderByDescending(a => a.Price).Take(100)).ToList();
+            try
+            {
+                double LastLowerAsk100 = Convert.ToDouble(OrdersBook100.Where(a => a.OrderType == "ask").OrderBy(a => a.Price).FirstOrDefault().Price);
+                double LastHigherAsk100 = Convert.ToDouble(OrdersBook100.Where(a => a.OrderType == "ask").OrderByDescending(a => a.Price).FirstOrDefault().Price);
+                double LastHigherBid100 = Convert.ToDouble(OrdersBook100.Where(a => a.OrderType == "bid").OrderByDescending(a => a.Price).FirstOrDefault().Price);
+                double LastLowerBid100 = Convert.ToDouble(OrdersBook100.Where(a => a.OrderType == "bid").OrderBy(a => a.Price).FirstOrDefault().Price);
+                double SumVolumeBid100 = Convert.ToDouble(OrdersBook100.Where(a => a.OrderType == "bid").Sum(a => a.Volume));
+                double SumVolumeAsk100 = Convert.ToDouble(OrdersBook100.Where(a => a.OrderType == "ask").Sum(a => a.Volume));
+                double BidDepth100 = LastHigherBid100 - LastLowerBid100;
+                double AskDepth100 = LastHigherAsk100 - LastLowerAsk100;
+                double VolumeWeightedRatio100 = (SumVolumeBid100 / BidDepth100) / (SumVolumeAsk100 / AskDepth100);
+
+                double alpha = 0.1;
+                double? VolumeWeightedRatioEMA = null;
+                var listEMA = DbOrderBook.OrderBookDatas.OrderByDescending(a => a.UnixTimestamp).Where(a => a.NumberOfOrderInBook == 100).Take(20).Select(a => a.VolumeWeightedRatio).DefaultIfEmpty().ToList();
+                if (listEMA.Count != 0)
+                {
+                    VolumeWeightedRatioEMA = listEMA.Aggregate((ema, nextQuote) => alpha * nextQuote + (1 - alpha) * ema);
+                }
+               
+                //record the Order book analysied data
+
+                List<OrderBookAnalysedData> list = new List<OrderBookAnalysedData>();
+                Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+
+                orderBookAnalysedData100 = new OrderBookAnalysedData()
+                {
+                    UnixTimestamp = unixTimestamp,
+                    Timestamp = DateTime.UtcNow,                  
+                    VolumeWeightedRatio = VolumeWeightedRatio100,
+                    NumberOfOrderInBook = 100,
+                    EMA = VolumeWeightedRatioEMA ?? 0
+                };
+
+                list.Add(orderBookAnalysedData100);
+
+                //register in mysql database              
+                DbOrderBook.OrderBookDatas.AddRange(list);
+                DbOrderBook.SaveChanges();
+
+                return VolumeWeightedRatio100;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error : Calculate orderbookindexes 100 method > " + ex.Message);
+                return LastMiddleQuote;
+            }
+        }
+
         #endregion
     }
 }

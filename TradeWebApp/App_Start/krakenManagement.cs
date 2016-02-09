@@ -119,6 +119,7 @@ namespace TradeWebApp
                 dashboard.LastMiddleQuote = orderbook.LastMiddleQuote ;
                 dashboard.LastPrice = orderbook.LastPrice ;
                 dashboard.VolumeWeightedRatio = orderbook.orderBookAnalysedData.VolumeWeightedRatio ?? 0.0;
+                dashboard.VolumeWeightedRatio100 = orderbook.orderBookAnalysedData100.VolumeWeightedRatio ?? 0.0;
                 dashboard.PlayerState = player.playerState;
                 dashboard.BalanceBtc = orderbook.CurrentBalance.BTC;
                 dashboard.BalanceEuro = orderbook.CurrentBalance.EUR;

@@ -15,6 +15,7 @@ namespace KrakenService.KrakenObjects
         public string Id { get; set; }
         public long UnixTimestamp { get; set; }
         public DateTime Timestamp { get; set; }
+        /*/
         public double LowerBid { get; set; }
         public double HigherBid { get; set; }
         public double LowerAsk { get; set; }
@@ -25,7 +26,10 @@ namespace KrakenService.KrakenObjects
         public double AskVolume { get; set; }
         public double DepthRatio { get; set; }
         public double VolumeRatio { get; set; }
+        /*/
         public double? VolumeWeightedRatio { get; set; }
+        public int NumberOfOrderInBook { get; set; }
+        public double EMA { get; set; }
         
         public OrderBookAnalysedData()
         {

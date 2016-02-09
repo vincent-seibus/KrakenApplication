@@ -15,6 +15,7 @@ namespace TradeWebApp.Models
         public double LastMiddleQuote { get; set; }
         public double LastPrice { get; set; }
         public double VolumeWeightedRatio { get; set; }
+        public double VolumeWeightedRatio100 { get; set; }
         public double BalanceEuro { get; set; }
         public double BalanceBtc { get; set; }
         public bool IsPlaying { get; set; }
