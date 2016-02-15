@@ -212,6 +212,9 @@
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\ManageController.cs" />
     <Compile Include="Controllers\PlayerStateController.cs" />
+    <Compile Include="Controllers\StripeController.cs" />
+    <Compile Include="Controllers\Stripe\CardsController.cs" />
+    <Compile Include="Controllers\Stripe\CustomersController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>

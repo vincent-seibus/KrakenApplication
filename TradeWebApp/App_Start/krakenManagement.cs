@@ -44,12 +44,12 @@ namespace TradeWebApp
             RSIMethod rsi30min48period = new RSIMethod(pair, rec1, 0);
             rsi30min48period.InitializeRSI(30, 48);
             RSIMethod rsi60min48period = new RSIMethod(pair, rec1, 0);
-            rsi30min48period.InitializeRSI(60, 48);
+            rsi60min48period.InitializeRSI(60, 48);
             RSIMethod rsi1440min14period = new RSIMethod(pair, rec1, 0);
-            rsi30min48period.InitializeRSI(1440, 14);
+            rsi1440min14period.InitializeRSI(1440, 14);
 
             if (FundPercentage == null || FundPercentage == 0)
-                FundPercentage = 1;
+                FundPercentage = 0.2;
 
             OrderBookAnalysisMethod orderAna1 = new OrderBookAnalysisMethod(pair, rec1, FundPercentage);
             orderAna1.InitializeOrderBook();
@@ -60,6 +60,8 @@ namespace TradeWebApp
             recorder = rec1;
             orderbook = orderAna1;
             player = play1;
+
+            MarketDataRecorder marketRecorder = new MarketDataRecorder(orderbook, rsi30min48period, rsi60min48period, rsi1440min14period);
 
             InitializeTime = 0;
             while (InitializeTime < 40)

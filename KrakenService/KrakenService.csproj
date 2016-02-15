@@ -75,6 +75,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\Configuration.cs" />
+    <Compile Include="KrakenObjects\DataModels\MarketData.cs" />
     <Compile Include="KrakenObjects\Position.cs" />
     <Compile Include="KrakenObjects\OrderBookAnalysedData.cs" />
     <Compile Include="MarketAnalysis\Base\AbstractAnalysier.cs" />
@@ -91,6 +92,7 @@
     <Compile Include="KrakenObjects\SendingRateManager.cs" />
     <Compile Include="KrakenObjects\ServerTime.cs" />
     <Compile Include="KrakenObjects\TradingData.cs" />
+    <Compile Include="MarketAnalysis\MarketDataRecorder.cs" />
     <Compile Include="MarketAnalysis\OrderBookAnalysisMethod.cs" />
     <Compile Include="MarketAnalysis\RSIMethod.cs" />
     <Compile Include="NewPlayer.cs" />

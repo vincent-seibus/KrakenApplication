@@ -31,6 +31,10 @@ namespace KrakenService.MarketAnalysis
         public MySqlIdentityDbContext DbOrderBook { get; set; }
         public double VolumeWeightedRatioTresholdToBuy { get; set; }
         public double VolumeWeightedRatioTresholdToSell { get; set; }
+
+        public double Spread { get; set; }
+        public double HigherBid { get; set; }
+        public double LowerAsk { get; set; }
         #endregion
 
         public OrderBookAnalysisMethod(string Pair, Recorder rec, double PercentageOfFund)
@@ -45,8 +49,8 @@ namespace KrakenService.MarketAnalysis
             try
             {
                 DbOrderBook = new MySqlIdentityDbContext();
-                orderBookAnalysedData = DbOrderBook.OrderBookDatas.OrderByDescending(a => a.UnixTimestamp).FirstOrDefault();
-                VolumeWeightedRatioTresholdToBuy = 1.2;
+                orderBookAnalysedData100 = DbOrderBook.OrderBookDatas.OrderByDescending(a => a.UnixTimestamp).Where(a => a.NumberOfOrderInBook == 100).FirstOrDefault();
+                VolumeWeightedRatioTresholdToBuy = 1.8;
                 if (orderBookAnalysedData100.EMA < VolumeWeightedRatioTresholdToBuy)
                 {
 
@@ -67,7 +71,7 @@ namespace KrakenService.MarketAnalysis
 
         public bool Sell()
         {
-            VolumeWeightedRatioTresholdToSell = 1.0;
+            VolumeWeightedRatioTresholdToSell = 1.3;
             if (orderBookAnalysedData100.EMA > VolumeWeightedRatioTresholdToSell)
             {
                 return false;
@@ -83,21 +87,23 @@ namespace KrakenService.MarketAnalysis
         {
             try
             {
+                recorder.RecordBalance();
+                CurrentBalance = recorder.CurrentBalance; 
                 if (MyOpenedOrders.Count != 0)
                 {
+                   
                         if (!recorder.GetOpenOrders())
                             return true;
 
                         var OpenedOrders = recorder.OpenedOrders.Select(a => a.OrderID);
 
                         if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
-                            return true;
-
-                        CurrentBalance = recorder.CurrentBalance;           
+                            return true;          
 
                         return false;             
                 }
 
+                
                 return false;
 
             }
@@ -112,9 +118,11 @@ namespace KrakenService.MarketAnalysis
         {
             try
             {
+                recorder.RecordBalance();
+                CurrentBalance = recorder.CurrentBalance; 
                 if (MyOpenedOrders.Count != 0)
                 {
-                   
+                    
                         if (!recorder.GetOpenOrders())
                             return true;
 
@@ -123,11 +131,9 @@ namespace KrakenService.MarketAnalysis
                         if (MyOpenedOrders.Select(a => a.OrderID).Intersect(OpenedOrders).Any())
                             return true;
 
-                        CurrentBalance = recorder.CurrentBalance;      
-
                         return false;                   
                 }
-
+                
                 return false;
             }
             catch (Exception ex)
@@ -287,6 +293,8 @@ namespace KrakenService.MarketAnalysis
             OrdersBook = recorder.ListOfCurrentOrder;
             try
             {
+                
+
                 double LastLowerAsk = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "ask").OrderBy(a => a.Price).FirstOrDefault().Price);
                 double LastHigherAsk = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "ask").OrderByDescending(a => a.Price).FirstOrDefault().Price);
                 double LastHigherBid = Convert.ToDouble(OrdersBook.Where(a => a.OrderType == "bid").OrderByDescending(a => a.Price).FirstOrDefault().Price);
@@ -299,6 +307,10 @@ namespace KrakenService.MarketAnalysis
                 double BidDepthPercentage = BidDepth / LastMiddleQuote;
                 double AskDepthPercentage = AskDepth / LastMiddleQuote;
                 double VolumeWeightedRatio = (SumVolumeBid / BidDepth) / (SumVolumeAsk / AskDepth);
+
+                HigherBid = LastHigherBid;
+                LowerAsk = LastLowerAsk;
+                Spread = LowerAsk - HigherBid;
 
                 double alpha = 0.1;
                 double? VolumeWeightedRatioEMA = null;

@@ -9,6 +9,7 @@ using System.Data.Entity.ModelConfiguration.Conventions;
 using System.Security.Cryptography;
 using System.IO;
 using KrakenService.KrakenObjects;
+using KrakenService.KrakenObjects.DataModels;
 
 namespace KrakenService.Data
 {
@@ -18,12 +19,13 @@ namespace KrakenService.Data
         public MySqlIdentityDbContext()
             : base("MyDbContextConnectionString")
         {
-            Database.SetInitializer<MySqlIdentityDbContext>(new MyDbInitializer());
-           // Database.SetInitializer<MySqlIdentityDbContext>(null);
+           Database.SetInitializer<MySqlIdentityDbContext>(new MyDbInitializer());
+           //Database.SetInitializer<MySqlIdentityDbContext>(null);
         }
 
         public DbSet<TradingData> TradingDatas { get; set; }
         public DbSet<OrderBookAnalysedData> OrderBookDatas { get; set; }
+        public DbSet<MarketData> MarketDatas { get; set; }
 
         
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
