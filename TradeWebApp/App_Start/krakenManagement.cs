@@ -49,7 +49,7 @@ namespace TradeWebApp
             rsi1440min14period.InitializeRSI(1440, 14);
 
             if (FundPercentage == null || FundPercentage == 0)
-                FundPercentage = 0.2;
+                FundPercentage = 0.6;
 
             OrderBookAnalysisMethod orderAna1 = new OrderBookAnalysisMethod(pair, rec1, FundPercentage);
             orderAna1.InitializeOrderBook();
@@ -103,34 +103,43 @@ namespace TradeWebApp
             Dashboard dashboard = new Dashboard();           
             while (!IsStopping)
             {
-                if (IsPlaying)
+                try
                 {
-                    Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-                    player.Play();
-                    IsStarted = true;
-                    IsPaused = false;
+
+
+                    if (IsPlaying)
+                    {
+                        Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+                        player.Play();
+                        IsStarted = true;
+                        IsPaused = false;
+                    }
+                    else
+                    {
+                        IsStarted = false;
+                        IsPaused = true;
+                    }
+
+
+
+                    dashboard.LastMiddleQuote = orderbook.LastMiddleQuote;
+                    dashboard.LastPrice = orderbook.LastPrice;
+                    dashboard.VolumeWeightedRatio = orderbook.orderBookAnalysedData.VolumeWeightedRatio ?? 0.0;
+                    dashboard.VolumeWeightedRatio100 = orderbook.orderBookAnalysedData100.VolumeWeightedRatio ?? 0.0;
+                    dashboard.PlayerState = player.playerState;
+                    dashboard.BalanceBtc = orderbook.CurrentBalance.BTC;
+                    dashboard.BalanceEuro = orderbook.CurrentBalance.EUR;
+                    dashboard.IsPlaying = IsPlaying;
+                    dashboard.IsStopping = IsStopping;
+                    dashboard.EMA = orderbook.orderBookAnalysedData.EMA;
+                    dashboard.EMA100 = orderbook.orderBookAnalysedData100.EMA;
+                    HttpRuntime.Cache.Add("Dashboard", dashboard, null, Cache.NoAbsoluteExpiration, new TimeSpan(0, 1, 0), CacheItemPriority.Normal, null);
+                    Thread.Sleep(2000);
                 }
-                else
+                catch(Exception ex)
                 {
-                    IsStarted = false;
-                    IsPaused = true;
+
                 }
-              
-               
-                                
-                dashboard.LastMiddleQuote = orderbook.LastMiddleQuote ;
-                dashboard.LastPrice = orderbook.LastPrice ;
-                dashboard.VolumeWeightedRatio = orderbook.orderBookAnalysedData.VolumeWeightedRatio ?? 0.0;
-                dashboard.VolumeWeightedRatio100 = orderbook.orderBookAnalysedData100.VolumeWeightedRatio ?? 0.0;
-                dashboard.PlayerState = player.playerState;
-                dashboard.BalanceBtc = orderbook.CurrentBalance.BTC;
-                dashboard.BalanceEuro = orderbook.CurrentBalance.EUR;
-                dashboard.IsPlaying = IsPlaying;
-                dashboard.IsStopping = IsStopping;
-                dashboard.EMA = orderbook.orderBookAnalysedData.EMA;
-                dashboard.EMA100 = orderbook.orderBookAnalysedData100.EMA;
-                HttpRuntime.Cache.Add("Dashboard", dashboard, null, Cache.NoAbsoluteExpiration, new TimeSpan(0, 1, 0), CacheItemPriority.Normal, null);               
-                Thread.Sleep(2000);
             }
 
             IsStopped = true;

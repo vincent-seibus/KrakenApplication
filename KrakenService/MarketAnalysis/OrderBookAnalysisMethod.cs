@@ -49,9 +49,9 @@ namespace KrakenService.MarketAnalysis
             try
             {
                 DbOrderBook = new MySqlIdentityDbContext();
-                orderBookAnalysedData100 = DbOrderBook.OrderBookDatas.OrderByDescending(a => a.UnixTimestamp).Where(a => a.NumberOfOrderInBook == 100).FirstOrDefault();
+                orderBookAnalysedData = DbOrderBook.OrderBookDatas.OrderByDescending(a => a.UnixTimestamp).Where(a => a.NumberOfOrderInBook == 500).FirstOrDefault();
                 VolumeWeightedRatioTresholdToBuy = 1.8;
-                if (orderBookAnalysedData100.EMA < VolumeWeightedRatioTresholdToBuy)
+                if (orderBookAnalysedData.EMA < VolumeWeightedRatioTresholdToBuy)
                 {
 
                     return false;
@@ -71,8 +71,10 @@ namespace KrakenService.MarketAnalysis
 
         public bool Sell()
         {
-            VolumeWeightedRatioTresholdToSell = 1.3;
-            if (orderBookAnalysedData100.EMA > VolumeWeightedRatioTresholdToSell)
+            DbOrderBook = new MySqlIdentityDbContext();
+            orderBookAnalysedData = DbOrderBook.OrderBookDatas.OrderByDescending(a => a.UnixTimestamp).Where(a => a.NumberOfOrderInBook == 500).FirstOrDefault();
+            VolumeWeightedRatioTresholdToSell = 1.4;
+            if (orderBookAnalysedData.EMA > VolumeWeightedRatioTresholdToSell)
             {
                 return false;
             }
@@ -317,7 +319,7 @@ namespace KrakenService.MarketAnalysis
                 var  listEMA = DbOrderBook.OrderBookDatas.OrderByDescending(a => a.UnixTimestamp).Where(a => a.NumberOfOrderInBook == 500).Take(20).Select(a => a.VolumeWeightedRatio).DefaultIfEmpty().ToList();
                 if(listEMA.Count != 0)
                 {
-                     VolumeWeightedRatioEMA = listEMA.Aggregate((ema, nextQuote) => alpha * nextQuote + (1 - alpha) * ema);
+                    VolumeWeightedRatioEMA = listEMA.Average(); //listEMA.Aggregate((ema, nextQuote) => alpha * nextQuote + (1 - alpha) * ema);
                 }
                
 
@@ -384,7 +386,7 @@ namespace KrakenService.MarketAnalysis
                 var listEMA = DbOrderBook.OrderBookDatas.OrderByDescending(a => a.UnixTimestamp).Where(a => a.NumberOfOrderInBook == 100).Take(20).Select(a => a.VolumeWeightedRatio).DefaultIfEmpty().ToList();
                 if (listEMA.Count != 0)
                 {
-                    VolumeWeightedRatioEMA = listEMA.Aggregate((ema, nextQuote) => alpha * nextQuote + (1 - alpha) * ema);
+                    VolumeWeightedRatioEMA = listEMA.Average(); //listEMA.Aggregate((ema, nextQuote) => alpha * nextQuote + (1 - alpha) * ema);
                 }
                
                 //record the Order book analysied data

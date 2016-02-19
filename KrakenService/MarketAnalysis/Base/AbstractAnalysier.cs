@@ -61,11 +61,12 @@ namespace KrakenService.MarketAnalysis
         {
             while (true)
             {
-                MySqlIdentityDbContext db = new MySqlIdentityDbContext();
-                Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-                TradingDatasList = db.TradingDatas.Where(a => a.UnixTime > (unixTimestamp - 86400)).ToList();
                 try
                 {
+                    MySqlIdentityDbContext db = new MySqlIdentityDbContext();
+                    Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+                    TradingDatasList = db.TradingDatas.Where(a => a.UnixTime > (unixTimestamp - 86400)).ToList();
+               
                     GetWeightedAverage();
                     GetWeightedStandardDeviation();                  
                     GetLastPrice();
