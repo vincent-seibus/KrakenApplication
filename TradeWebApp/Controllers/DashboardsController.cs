@@ -8,6 +8,7 @@ using TradeWebApp.Models;
 using System.Web;
 using System.Web.Caching;
 using System.Threading.Tasks;
+using KrakenService.Helpers;
 
 namespace TradeWebApp.Controllers
 {
@@ -72,6 +73,24 @@ namespace TradeWebApp.Controllers
         }
 
 
+        // GET: api/Dashboards/5
+        [Route("api/Dashboards/EmailTest")]
+        [AcceptVerbs("GET")]
+        public object EmailTest()
+        {
+            try
+            {
+                string body = " </br> Last price:</br> EMA: ";
+                ServiceEmail.Send("vincent.lemaitre.01@gmail.com", "kraken mouvement", body, true);
+                return new { error = "", message = "email sent successfully"};
+            }
+            catch(Exception ex)
+            {
+                return new { error = "Error", message = ex.Message + ex.StackTrace };
+            }
+        }
+
+       
 
         // POST: api/Dashboards
         public void Post([FromBody]string value)

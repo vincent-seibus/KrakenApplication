@@ -4,13 +4,22 @@
     <title></title>
     <link rel="stylesheet" href="../../Content/bootstrap.min.css" type="text/css" />
 </head>
-<body ng-controller="DashboardController as dashboard">
+<body>
     <script type="text/javascript" src="../Module/angular.min.js"></script>
     <script type="text/javascript" src="../Module/app.js"></script>
-    <p> {{ "Hello " + "World" }} </p>
 
-    <div>
 
-    </div>
+    <section>
+     
+        <div  ng-controller="DashboardController as dashboard">
+            <p> player state :  {{ dashboard.info.PlayerState }} </p>
+            <p> Last middle quote :  {{ dashboard.info.LastMiddleQuote }} </p>
+            <p> Last price :  {{ dashboard.info.LastPrice }} </p>
+            <p> BTC :  {{ dashboard.info.BalanceBtc }} - Euro :  {{ dashboard.info.BalanceEuro }} </p>
+            <p> Volume weighted ratio Ema : {{ dashboard.info.EMA }} </p>
+
+            <button class="btn btn-success"> <em ng-hide="dashboard.info.IsPlaying" class="glyphicon glyphicon-play"></em> <em ng-show="dashboard.info.IsPlaying" class="glyphicon glyphicon-pause"></em> </button>
+        </div>
+    </section>
 </body>
 </html>

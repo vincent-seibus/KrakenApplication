@@ -16,6 +16,9 @@ namespace KrakenService
 {
     public class NewPlayer
     {
+        private static readonly log4net.ILog log =
+           log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         public IAnalysier analysier { get; set; }
         public KrakenClient.KrakenClient client { get; set; }
         public string Pair { get; set; }
@@ -32,6 +35,9 @@ namespace KrakenService
 
         public NewPlayer(IAnalysier i_analysier, string i_pair, SendingRateManager srm, LimitOrMarket limitormarket)
         {
+
+            log.Info("NewPlayer started ....");
+
             NumberProvider = new NumberFormatInfo();
             NumberProvider.CurrencyDecimalSeparator = ConfigurationManager.AppSettings["CurrencyDecimalSeparator"];
             SRM = srm;

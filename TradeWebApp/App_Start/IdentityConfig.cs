@@ -11,16 +11,42 @@ using Microsoft.AspNet.Identity.Owin;
 using Microsoft.Owin;
 using Microsoft.Owin.Security;
 using TradeWebApp.Models;
+using System.Net.Mail;
+using System.Configuration;
 
 namespace TradeWebApp
 {
     public class EmailService : IIdentityMessageService
     {
+        private static readonly log4net.ILog log =
+           log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         public Task SendAsync(IdentityMessage message)
         {
-            // Plug in your email service here to send an email.
+            // set the smtp client
+            try
+            {
+                SmtpClient client = new SmtpClient();
+                client.Port = int.Parse(ConfigurationManager.AppSettings["port"]);
+                client.DeliveryMethod = SmtpDeliveryMethod.Network;
+                client.UseDefaultCredentials = false;
+                client.Host = ConfigurationManager.AppSettings["host"];
+                client.Credentials = new System.Net.NetworkCredential(ConfigurationManager.AppSettings["user"], ConfigurationManager.AppSettings["password"]);
+
+              
+                MailMessage mail = new MailMessage(ConfigurationManager.AppSettings["from"], message.Destination);
+                mail.Subject = message.Subject;
+                mail.IsBodyHtml = true;
+                mail.Body = message.Body;
+                client.Send(mail);
+            }
+            catch (Exception ex)
+            {
+                log.Error("EmailService.SendAsync - " + ex.Message + " - " + ex.InnerException);
+            }
             return Task.FromResult(0);
         }
+
     }
 
     public class SmsService : IIdentityMessageService

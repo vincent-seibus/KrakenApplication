@@ -14,6 +14,10 @@ namespace KrakenService.MarketAnalysis
 {
     public class OrderBookAnalysisMethod : AbstractAnalysier, IAnalysier
     {
+        private static readonly log4net.ILog log =
+          log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
+
         #region Property Interface 
         public double VolumeToBuy { get; set; }
         public double VolumeToSell { get; set; }
@@ -265,10 +269,12 @@ namespace KrakenService.MarketAnalysis
         /// </summary> 
         public void InitializeOrderBook()
         {
-              DbOrderBook = new MySqlIdentityDbContext();
+            log.Info("InitializeOrderBook launched ....");
+
+            DbOrderBook = new MySqlIdentityDbContext();
               OrderBookIndexesPlay = true;
-              VolumeWeightedRatioTresholdToBuy = 1.7;
-              VolumeWeightedRatioTresholdToSell = 1.5;
+              VolumeWeightedRatioTresholdToBuy = 1.8;
+              VolumeWeightedRatioTresholdToSell = 1.4;
               Task.Run(() => GetOrderBookIndexesLoop());
         }
 
@@ -328,32 +334,38 @@ namespace KrakenService.MarketAnalysis
                 List<OrderBookAnalysedData> list = new List<OrderBookAnalysedData>();
                 Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
 
-                orderBookAnalysedData = new OrderBookAnalysedData()
+                if (VolumeWeightedRatioIsConsistent(VolumeWeightedRatio))
                 {
-                    UnixTimestamp = unixTimestamp,
-                    Timestamp = DateTime.UtcNow,
-                    /*/
-                    LowerAsk = LastLowerAsk,
-                    LowerBid = LastLowerBid,
-                    HigherAsk = LastHigherAsk,
-                    HigherBid = LastHigherBid,
-                    AskDepth = AskDepth,
-                    AskVolume = SumVolumeAsk,
-                    BidDepth = BidDepth,
-                    BidVolume = SumVolumeBid,
-                    DepthRatio = BidDepth / AskDepth,
-                    VolumeRatio = SumVolumeBid / SumVolumeAsk,
-                     /*/
-                    VolumeWeightedRatio = VolumeWeightedRatio,
-                    NumberOfOrderInBook = 500,
-                    EMA = VolumeWeightedRatioEMA ?? 0
+                    orderBookAnalysedData = new OrderBookAnalysedData()
+                    {
+                        UnixTimestamp = unixTimestamp,
+                        Timestamp = DateTime.UtcNow,
+                        /*/
+                        LowerAsk = LastLowerAsk,
+                        LowerBid = LastLowerBid,
+                        HigherAsk = LastHigherAsk,
+                        HigherBid = LastHigherBid,
+                        AskDepth = AskDepth,
+                        AskVolume = SumVolumeAsk,
+                        BidDepth = BidDepth,
+                        BidVolume = SumVolumeBid,
+                        DepthRatio = BidDepth / AskDepth,
+                        VolumeRatio = SumVolumeBid / SumVolumeAsk,
+                         /*/
+                        VolumeWeightedRatio = VolumeWeightedRatio,
+                        NumberOfOrderInBook = 500,
+                        EMA = VolumeWeightedRatioEMA ?? 0
 
-                };
-                list.Add(orderBookAnalysedData);
-                
-                //register in mysql database              
-                DbOrderBook.OrderBookDatas.AddRange(list);
-                DbOrderBook.SaveChanges();                
+                    };
+
+                // volume weighted ratio is consistent (> 0.3 and < 3) regiter it into the database 
+               
+                    list.Add(orderBookAnalysedData);
+
+                    //register in mysql database              
+                    DbOrderBook.OrderBookDatas.AddRange(list);
+                    DbOrderBook.SaveChanges();
+                }
 
                 return LastMiddleQuote;
             }
@@ -416,6 +428,30 @@ namespace KrakenService.MarketAnalysis
                 Console.WriteLine("Error : Calculate orderbookindexes 100 method > " + ex.Message);
                 return LastMiddleQuote;
             }
+        }
+
+        #endregion
+
+        #region helpers
+        
+        private bool VolumeWeightedRatioIsConsistent(double? VolumeWeightedRatio)
+        {
+            if(VolumeWeightedRatio < 0.3)
+            {
+                return false;
+            }
+
+            if (VolumeWeightedRatio > 3)
+            {
+                return false;
+            }
+
+            if(VolumeWeightedRatio == null)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         #endregion

@@ -19,6 +19,10 @@ namespace KrakenService
 {
     public class Recorder
     {
+
+        private static readonly log4net.ILog log =
+        log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         public KrakenClient.KrakenClient client { get; set; }
         public string Pair { get; set; }
         public ServerTime servertime { get; set; }
@@ -121,7 +125,7 @@ namespace KrakenService
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                log.Error("recorder.GetServerTime - "  + ex.Message);
                 return servertime;
             }
         }
@@ -149,7 +153,7 @@ namespace KrakenService
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                log.Error("recorder.GetRecentTrades - " + ex.Message);
             }
 
             return null;
@@ -180,7 +184,7 @@ namespace KrakenService
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                log.Error("recorder.GetOHLCDatas - " + ex.Message);
             }
 
             return null;
@@ -214,7 +218,7 @@ namespace KrakenService
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                log.Error("recorder.GetOrdersBook - " + ex.Message);
             }
 
             return null;
@@ -285,7 +289,7 @@ namespace KrakenService
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error RecordRecentTradeData :" + ex.Message);
+                log.Error("recorder.RecordRecentTradeData - " + ex.Message);
                 return since;
             }
         }
@@ -344,7 +348,7 @@ namespace KrakenService
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error RecordOHLCData :" + ex.Message);
+                log.Error("recorder.RecordOHLCData - " + ex.Message);
                 return since;
             }
         }
@@ -406,7 +410,7 @@ namespace KrakenService
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error RecordOrderBook :" + ex.Message);
+                log.Error("recorder.RecordOrderBook - " + ex.Message);
             }
         }
 
@@ -433,7 +437,7 @@ namespace KrakenService
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error RecordLastTradingData :" + ex.Message);
+                log.Error("recorder.RecordLastTradingData - " + ex.Message);
             }
         }
 

@@ -1,4 +1,5 @@
 ﻿using KrakenService;
+using KrakenService.Helpers;
 using KrakenService.KrakenObjects;
 using KrakenService.MarketAnalysis;
 using System;
@@ -14,6 +15,11 @@ namespace TradeWebApp
 {
     public static class krakenManagement
     {
+        // Logger 
+
+        private static readonly log4net.ILog log =
+            log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         // property config
         public static double FundPercentage { get; set; }
 
@@ -28,6 +34,9 @@ namespace TradeWebApp
 
         public static void Initialize()
         {
+
+            log.Info("Kraken management initialize ....");
+
             // The pair we will work on
             string pair = "XXBTZEUR";
             IsPlaying = false;
@@ -95,8 +104,7 @@ namespace TradeWebApp
         {
             IsStopping = true;
         }
-
-
+        
 
         public static void PlayerLoop(NewPlayer player)
         {
@@ -105,7 +113,6 @@ namespace TradeWebApp
             {
                 try
                 {
-
 
                     if (IsPlaying)
                     {
@@ -119,9 +126,7 @@ namespace TradeWebApp
                         IsStarted = false;
                         IsPaused = true;
                     }
-
-
-
+                    
                     dashboard.LastMiddleQuote = orderbook.LastMiddleQuote;
                     dashboard.LastPrice = orderbook.LastPrice;
                     dashboard.VolumeWeightedRatio = orderbook.orderBookAnalysedData.VolumeWeightedRatio ?? 0.0;
@@ -134,12 +139,15 @@ namespace TradeWebApp
                     dashboard.EMA = orderbook.orderBookAnalysedData.EMA;
                     dashboard.EMA100 = orderbook.orderBookAnalysedData100.EMA;
                     HttpRuntime.Cache.Add("Dashboard", dashboard, null, Cache.NoAbsoluteExpiration, new TimeSpan(0, 1, 0), CacheItemPriority.Normal, null);
-                    Thread.Sleep(2000);
+
+                                   
                 }
                 catch(Exception ex)
                 {
-
+                    log.Error(" krakenManagement.PlayerLoop.While - " + ex.Message + " - " + ex.InnerException + " - " + ex.StackTrace );
                 }
+
+                Thread.Sleep(2000);
             }
 
             IsStopped = true;
